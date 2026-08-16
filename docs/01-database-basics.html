@@ -670,6 +670,20 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
 }
 .rtable tbody tr:last-child td { border-bottom: 0; }
 .rmeta { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
+.rmeta a { color: var(--accent-ink); }
+.rout {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 8px;
+  padding: 0.7rem 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  margin: 0.4rem 0 0;
+}
 .runbtn {
   position: absolute;
   top: 0.42rem;
@@ -1050,6 +1064,7 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
         <button type="button" data-preset="cloud">ClickHouse Cloud</button>
         <button type="button" data-preset="local">로컬 서버 (localhost:8123)</button>
         <button type="button" data-preset="play">공식 플레이그라운드 (무계정·읽기전용)</button>
+        <button type="button" data-preset="fiddle">Fiddle (무계정·DDL 가능)</button>
       </div>
       <div>
         <label for="conn-url">서버 URL</label>
@@ -1073,7 +1088,10 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
       (쿼리는 브라우저에서 입력한 서버로 직접 전송 — GitHub 서버를 거치지 않음). 공용 PC에서는 사용 후 "저장 지우기"를 누르세요.
       Cloud는 콘솔의 Connect → HTTPS 주소(포트 8443)를 넣으면 됩니다.
       <b>로컬 서버</b> 연결 시 Chrome이 "로컬 네트워크 접근" 권한을 물으면 <b>허용</b>을 누르세요(최초 1회).
-      Safari는 로컬(localhost) 연결을 차단하므로 Cloud나 플레이그라운드를 사용하세요.</p>
+      Safari는 로컬(localhost) 연결을 차단하므로 Cloud나 플레이그라운드를 사용하세요.
+      <b>Fiddle</b>은 실행마다 새 인스턴스가 뜨는 공용 실험대라 CREATE/INSERT까지 가능하지만
+      <b>상태가 실행 간 유지되지 않습니다</b> (전체 스크립트가 한 번에 실행됨).
+      URL 끝에 <code>#26.3</code>처럼 붙이면 해당 버전으로 실행됩니다.</p>
     </div>
   </details>
   <textarea class="sqled" id="sqled" spellcheck="false" placeholder="-- 본문 코드의 ▶ 실행 버튼을 누르거나 직접 입력하세요&#10;SELECT version();"></textarea>
@@ -1186,8 +1204,22 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
   var PRESETS = {
     cloud: { url: '', user: 'default', pass: '', ph: 'https://인스턴스ID.지역.clickhouse.cloud:8443' },
     local: { url: 'http://localhost:8123', user: 'default', pass: '' },
-    play:  { url: 'https://play.clickhouse.com', user: 'explorer', pass: '' }
+    play:  { url: 'https://play.clickhouse.com', user: 'explorer', pass: '' },
+    fiddle: { url: 'https://fiddle.clickhouse.com', user: '', pass: '' }
   };
+  function isFiddle() { return /fiddle\.clickhouse\.com/i.test($url.value); }
+  function fiddleVersion() {
+    var m = $url.value.match(/#([\w.\-]+)/);
+    return m ? m[1] : 'latest';
+  }
+  function fiddleRun(sql) {
+    // text/plain = simple request → preflight 왕복 없음 (Fiddle 서버는 본문을 JSON으로 파싱)
+    return fetch('https://fiddle.clickhouse.com/api/runs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ query: sql, version: fiddleVersion() })
+    }).then(function (r) { return r.json(); });
+  }
   document.querySelectorAll('.sqlpresets button').forEach(function (b) {
     b.addEventListener('click', function () {
       var p = PRESETS[this.dataset.preset];
@@ -1220,6 +1252,19 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
 
   document.getElementById('conn-save').addEventListener('click', function () {
     saveConn();
+    if (isFiddle()) {
+      connState.textContent = ' 연결 확인 중…';
+      fiddleRun('SELECT version()').then(function (j) {
+        if (j.result) {
+          connState.textContent = ' ✓ Fiddle (v' + (j.result.output || '?').trim() + ')';
+          document.getElementById('sqlconn').removeAttribute('open');
+        } else {
+          connState.textContent = '';
+          renderError('Fiddle 연결 실패: ' + (j.error && j.error.message));
+        }
+      }).catch(function (e) { connState.textContent = ''; renderError('Fiddle 연결 실패: ' + e.message); });
+      return;
+    }
     var ep = endpoint();
     if (!ep) { connState.textContent = ''; stat.textContent = '서버 URL을 입력하세요'; return; }
     connState.textContent = ' 연결 확인 중…';
@@ -1310,11 +1355,47 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
     wrap.innerHTML = h + '<div class="rmeta">' + esc(metaTxt) + '</div>';
     out.appendChild(wrap);
   }
+  function runFiddle() {
+    var sql = ed.value.trim();
+    if (!sql) return;
+    out.innerHTML = '';
+    runBtn.disabled = true;
+    stat.textContent = 'Fiddle에서 실행 중… (새 인스턴스 기동, 수 초 걸릴 수 있음)';
+    var t0 = performance.now();
+    fiddleRun(sql).then(function (j) {
+      if (j.error) { renderError(j.error.message || JSON.stringify(j.error)); return; }
+      var res = j.result || {};
+      var pre = document.createElement('pre');
+      pre.className = 'rout';
+      pre.textContent = res.output === '' ? '(출력 없음 — 정상 실행)' : res.output;
+      out.appendChild(pre);
+      var meta = document.createElement('div');
+      meta.className = 'rmeta';
+      var info = 'Fiddle 서버 실행 ' + (res.time_elapsed || '') + ' · 버전 ' + fiddleVersion() +
+                 ' · ⚠️ 매 실행마다 새 인스턴스 (CREATE한 것은 같은 실행 안에서만 유효)';
+      meta.textContent = info;
+      if (res.query_run_id) {
+        var a = document.createElement('a');
+        a.href = 'https://fiddle.clickhouse.com/' + res.query_run_id;
+        a.target = '_blank'; a.rel = 'noopener';
+        a.textContent = ' Fiddle에서 열기·공유 ↗';
+        meta.appendChild(a);
+      }
+      out.appendChild(meta);
+    }).catch(function (e) {
+      renderError('Fiddle 요청 실패: ' + e.message);
+    }).then(function () {
+      runBtn.disabled = false;
+      stat.textContent = '전체 스크립트 1회 실행 · ' + ((performance.now() - t0) / 1000).toFixed(2) + 's';
+      out.scrollTop = out.scrollHeight;
+    });
+  }
   function runAll() {
+    if (isFiddle()) { runFiddle(); return; }
     var ep = endpoint();
     if (!ep) {
       document.getElementById('sqlconn').setAttribute('open', '');
-      stat.textContent = '먼저 접속 설정을 입력하세요 (플레이그라운드는 무계정)';
+      stat.textContent = '먼저 접속 설정을 입력하세요 (플레이그라운드·Fiddle은 무계정)';
       return;
     }
     var stmts = splitSql(ed.value);

@@ -84,8 +84,11 @@ docker exec -it my-clickhouse clickhouse-client --password changeme
   수십억 행짜리 실제 데이터셋이 로드되어 있다. ⚠️ **읽기 전용**(DDL·INSERT 불가) —
   조회·함수 연습 전용이고 모델링·적재 연습은 로컬에서 해야 한다.
   CLI 접속도 된다: `clickhouse client --secure --host play.clickhouse.com --user explorer`
-- **[fiddle.clickhouse.com](https://fiddle.clickhouse.com)** — 버전 골라서 DDL부터
-  실험 가능 (SQL 공유용)
+- **[fiddle.clickhouse.com](https://fiddle.clickhouse.com)** — 실행마다 1회용
+  인스턴스가 떠서 **CREATE/INSERT까지 자유롭고**, 버전을 골라 실행하며 결과를 링크로
+  공유할 수 있다 (버전별 동작 비교의 유일한 도구). 이 사이트 SQL 실행기의
+  **"Fiddle" 프리셋**으로 계정 없이 바로 쓸 수 있다 — 단, **상태가 실행 간 유지되지
+  않으므로** CREATE→INSERT→SELECT를 한 번에 실행해야 한다
 - **내장 웹 UI `/play`** — 로컬 서버를 띄웠다면 브라우저에서
   `http://localhost:8123/play` (쿼리 편집기 + 자동완성 내장, 26.7+에서 대폭 개선)
 - **내장 오프라인 문서 `/docs`** (26.7+) — `http://localhost:8123/docs`에
