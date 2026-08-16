@@ -1,0 +1,58 @@
+<svg viewBox="0 0 680 240" role="img" aria-label="시험의 5개 영역이 이 책의 어느 장과 연결되는지 보여주는 지도. 2시간 동안 10~12개 실기 과제가 다섯 영역에서 출제된다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-map" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 시험 박스 -->
+  <rect x="200" y="16" width="280" height="44" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="35" text-anchor="middle" fill="#201F18" font-weight="700">실기 시험 · 2시간 · 과제 10~12개</text>
+  <text x="340" y="52" text-anchor="middle" fill="#201F18" font-size="10.5">모든 과제가 아래 5개 영역에서 출제 · 합격선 70%</text>
+
+  <!-- 분배 화살표 -->
+  <g stroke="#D99E00" stroke-width="1.4" marker-end="url(#arr-map)">
+    <line x1="240" y1="60" x2="90"  y2="96"/>
+    <line x1="290" y1="60" x2="220" y2="96"/>
+    <line x1="340" y1="60" x2="340" y2="96"/>
+    <line x1="390" y1="60" x2="460" y2="96"/>
+    <line x1="440" y1="60" x2="590" y2="96"/>
+  </g>
+
+  <!-- 5개 영역 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="28"  y="102" width="124" height="72" rx="8" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="160" y="102" width="124" height="72" rx="8" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="292" y="102" width="124" height="72" rx="8" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="424" y="102" width="124" height="72" rx="8" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="556" y="102" width="118" height="72" rx="8" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" fill="currentColor" font-weight="700" font-size="11.5">
+    <text x="90"  y="124">① 데이터 모델링</text>
+    <text x="222" y="124">② 데이터 삽입</text>
+    <text x="354" y="124">③ 데이터 분석</text>
+    <text x="486" y="124">④ 성능 최적화</text>
+    <text x="615" y="124">⑤ 중복 제거</text>
+  </g>
+  <g text-anchor="middle" fill="currentColor" font-size="10" opacity="0.7">
+    <text x="90"  y="142">테이블·타입 설계</text>
+    <text x="90"  y="156">키·Dictionary</text>
+    <text x="222" y="142">파일·S3 적재</text>
+    <text x="222" y="156">삽입 중 변환</text>
+    <text x="354" y="142">SELECT·함수</text>
+    <text x="354" y="156">집계·GROUP BY</text>
+    <text x="486" y="142">MV·Projection</text>
+    <text x="486" y="156">Skip Index</text>
+    <text x="615" y="142">Replacing</text>
+    <text x="615" y="156">Collapsing·DELETE</text>
+  </g>
+  <!-- 장 매핑 -->
+  <g text-anchor="middle" fill="#D99E00" font-weight="700" font-size="11">
+    <text x="90"  y="196">→ 4~7장</text>
+    <text x="222" y="196">→ 8장</text>
+    <text x="354" y="196">→ 9~11장</text>
+    <text x="486" y="196">→ 12~13장</text>
+    <text x="615" y="196">→ 14장</text>
+  </g>
+  <text x="340" y="226" text-anchor="middle" fill="currentColor" opacity="0.7" font-size="11">1~3장은 다섯 영역 전체의 바탕 (DB 개념·환경·SQL 기초) · 16~17장은 심화, 19장 모의고사로 마무리</text>
+</svg>

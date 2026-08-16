@@ -256,3 +256,45 @@ INSERT INTO ev_state VALUES ('V1', 80, NULL);
 INSERT INTO ev_state (vin, lat) VALUES ('V1', 37.5);
 SELECT * FROM ev_state FINAL;   -- V1 | 80 | 37.5  (battery 유지!)
 ```
+
+## 이해도 체크
+
+```quiz
+Q: ReplacingMergeTree에 같은 키로 두 번 INSERT한 직후 SELECT하면?
+1) 최신 행만 보인다
+2) 두 행이 모두 보인다 — merge 전이므로 *
+3) 에러가 난다
+E: 중복 제거는 백그라운드 merge 때 일어난다. 즉시 최신만 보려면 FINAL 또는 argMax + GROUP BY (14.4절).
+```
+
+```quiz
+Q: CollapsingMergeTree에서 상태를 변경하는 올바른 방법은?
+1) UPDATE 문 실행
+2) 이전 상태와 완전히 같은 값 + sign=-1 취소 행과 새 상태 +1 행을 INSERT *
+3) 이전 행을 DELETE 후 INSERT
+E: 취소 행은 원본과 값이 완전히 같아야 상쇄된다. 조회는 sum(값×sign) + HAVING sum(sign)>0 (14.5절).
+```
+
+```quiz
+Q: `ALTER TABLE ... UPDATE`로 변경할 수 없는 컬럼은?
+1) 아무 컬럼이나 가능
+2) primary key와 파티션 키 계산에 쓰이는 컬럼 *
+3) 문자열 컬럼
+E: 정렬·파티션 구조가 깨지기 때문이다. PARTITION BY toYYYYMM(created_at)이면 created_at도 불가 (14.3절).
+```
+
+```quiz
+Q: `OPTIMIZE TABLE ... FINAL`을 cron에 넣어 상시 실행하면 안 되는 이유는?
+1) 문법이 자주 바뀌어서
+2) 거대 단일 part가 만들어져 이후 자동 merge에서 배제되기 때문 *
+3) 라이선스 위반이라서
+E: merge 크기 안전장치를 무시하고 합치므로, 한 번 만들어진 거대 part는 그 파티션의 중복 제거를 멈추게 한다. 닫힌 파티션의 1회성 정리에만 (14.6절).
+```
+
+```quiz
+Q: 로컬 단일 노드 MergeTree에서 같은 INSERT를 재시도했더니 중복이 생겼다. 이유는?
+1) 버그다
+2) 비복제 테이블은 non_replicated_deduplication_window 기본값이 0이라 dedup이 꺼져 있어서 *
+3) 재시도가 원래 불가능해서
+E: 블록 중복 제거는 Replicated/Cloud에서 기본 활성이고, 로컬 MergeTree는 설정을 켜야 한다 (14.6절).
+```

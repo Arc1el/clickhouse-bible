@@ -75,6 +75,11 @@ ORDER BY 정렬 기준       -- ⑥ 어떤 순서로
 LIMIT    개수            -- ⑦ 몇 개만
 ```
 
+쓰는 순서와 실행되는 순서가 다르다는 것이 SQL 이해의 첫 열쇠다 — 엔진은 항상
+FROM(어디서)부터 생각한다:
+
+![SELECT 문은 위에서부터 쓰지만, 엔진은 FROM→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT 순으로 실행한다](../docs/assets/diagrams/select-order.svg)
+
 하나씩 실행해 보자.
 
 ### 전체 조회와 필터
@@ -223,3 +228,37 @@ SELECT category, max(price) AS max_price FROM menu
 GROUP BY category HAVING max_price >= 12000;
 ```
 </details>
+
+## 이해도 체크
+
+```quiz
+Q: 집계 결과(예: count() >= 2)를 조건으로 걸려면 어디에 쓰는가?
+1) WHERE
+2) HAVING *
+3) ORDER BY
+E: WHERE는 집계 "전" 행을 거르고, HAVING은 GROUP BY 집계 "후" 결과를 거른다. 실행 순서(FROM→WHERE→GROUP BY→HAVING)를 기억하자 (3.4절).
+```
+
+```quiz
+Q: 문자열 리터럴의 올바른 표기는?
+1) WHERE name = "김치찌개"
+2) WHERE name = '김치찌개' *
+3) WHERE name = 김치찌개
+E: 작은따옴표가 문자열이다. 큰따옴표는 컬럼·테이블 이름(식별자)용이라 "그런 컬럼 없음" 에러가 난다 (3.1, 3.7절).
+```
+
+```quiz
+Q: SELECT 문에서 엔진이 가장 먼저 실행하는 절은?
+1) SELECT
+2) FROM *
+3) LIMIT
+E: 쓰는 순서와 달리 실행은 FROM(어디서)→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT 순이다 (3.4절 다이어그램).
+```
+
+```quiz
+Q: ClickHouse의 CREATE TABLE에서 MySQL과 달리 반드시 지정해야 하는 것은?
+1) PRIMARY KEY
+2) ENGINE *
+3) CHARSET
+E: ClickHouse 테이블은 반드시 엔진(Memory, MergeTree 등)을 지정한다. 실전은 거의 항상 MergeTree다 (3.2절).
+```

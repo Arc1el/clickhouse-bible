@@ -1,0 +1,52 @@
+<svg viewBox="0 0 680 330" role="img" aria-label="느린 쿼리 최적화 진단 순서. EXPLAIN indexes=1로 granule 비율을 보고, 나쁘면 ORDER BY 재설계나 projection, skip index를 검토한다. 비율이 좋은데도 느리면 SELECT 컬럼 축소, 반복 집계는 MV로 사전 계산한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B8878"/>
+    </marker>
+    <marker id="arr-pf-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <rect x="270" y="14" width="140" height="34" rx="8" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.3"/>
+  <text x="340" y="36" text-anchor="middle" fill="#8B8878" font-weight="700">느린 쿼리 발견</text>
+
+  <line x1="340" y1="48" x2="340" y2="68" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-pf-acc)"/>
+
+  <rect x="230" y="74" width="220" height="40" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="92" text-anchor="middle" fill="#201F18" font-weight="700" font-family="Menlo, monospace" font-size="11.5">EXPLAIN indexes = 1</text>
+  <text x="340" y="108" text-anchor="middle" fill="#201F18" font-size="10.5">Granules: 읽은수 / 전체수 확인</text>
+
+  <!-- 분기 -->
+  <g stroke="#8B8878" stroke-width="1.3" marker-end="url(#arr-pf)">
+    <line x1="252" y1="114" x2="160" y2="146"/>
+    <line x1="428" y1="114" x2="520" y2="146"/>
+  </g>
+  <text x="184" y="136" text-anchor="end" font-size="10.5" fill="#8B8878" font-weight="700">비율 나쁨 (거의 전부 읽음)</text>
+  <text x="498" y="136" font-size="10.5" fill="#8B8878" font-weight="700">비율 좋은데도 느림</text>
+
+  <!-- 왼쪽: 읽기 줄이기 -->
+  <rect x="36" y="152" width="250" height="120" rx="10" fill="none" stroke="#8B8878" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="161" y="172" text-anchor="middle" fill="#8B8878" font-weight="700" font-size="11.5">읽는 양을 줄여라</text>
+  <g font-size="10.8" fill="#8B8878">
+    <text x="52" y="194">① 쿼리가 ORDER BY 키로 필터하는가?</text>
+    <text x="66" y="210" opacity="0.75">아니면 쿼리 또는 키를 재설계 (6장)</text>
+    <text x="52" y="230">② 다른 정렬이 통째로 필요 → Projection</text>
+    <text x="52" y="248">③ 부분 가속 → set/minmax Skip Index</text>
+    <text x="66" y="264" opacity="0.75">(둘 다 13장 · MATERIALIZE 잊지 말 것)</text>
+  </g>
+
+  <!-- 오른쪽: 계산 줄이기 -->
+  <rect x="394" y="152" width="250" height="120" rx="10" fill="none" stroke="#8B8878" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="519" y="172" text-anchor="middle" fill="#8B8878" font-weight="700" font-size="11.5">계산·전송을 줄여라</text>
+  <g font-size="10.8" fill="#8B8878">
+    <text x="410" y="194">① SELECT * 금지 — 필요한 컬럼만 (1장)</text>
+    <text x="410" y="212">② 같은 집계 반복 → MV로 사전 계산 (12장)</text>
+    <text x="410" y="230">③ 문자열 → LowCardinality 검토 (4장)</text>
+    <text x="410" y="248">④ JOIN → Dictionary / 작은 쪽 오른쪽 (7·9장)</text>
+    <text x="410" y="264">⑤ 병목 단계 특정 → EXPLAIN ANALYZE</text>
+  </g>
+
+  <text x="340" y="298" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">순서가 중요하다: 최적화는 <tspan font-weight="700">한 번에 하나씩</tspan> 적용하고, 캐시를 끈 상태로 전후를 측정해 효과를 분리한다 (16.6절).</text>
+  <text x="340" y="316" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">대부분의 성능 문제는 왼쪽 상자(읽는 양)에서 끝난다 — ClickHouse 최적화의 제1원칙은 "덜 읽기"다.</text>
+</svg>

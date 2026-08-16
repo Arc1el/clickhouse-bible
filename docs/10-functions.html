@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -522,6 +605,58 @@ SELECT
     toHour(now()),
     toYYYYMM(toDate(&#x27;2026-08-16&#x27;));      -- 202608 (파티션 표현식 단골)</code></pre>
 <h3 id="s7">시간 버킷 만들기 (GROUP BY의 단짝 — "시간 단위 집계" 시험 문형)</h3>
+<p>"시간대별 집계"는 결국 <strong>제각각인 초 단위 시각을 뭉개서 같은 그룹 키로 만드는 것</strong>이다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 232" role="img" aria-label="흩어진 타임스탬프들을 toStartOfHour가 시간대의 시작 시각으로 변환하면 같은 시간대의 행들이 같은 값을 갖게 되어 GROUP BY로 묶인다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-tb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="130" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">제각각인 타임스탬프</text>
+  <g font-family="Menlo, monospace" font-size="11" fill="currentColor">
+    <text x="46" y="56">09:03:21</text>
+    <text x="46" y="80">09:41:07</text>
+    <text x="46" y="104">09:58:44</text>
+    <text x="46" y="128">10:02:13</text>
+    <text x="46" y="152">10:37:55</text>
+  </g>
+
+  <!-- 변환 박스 -->
+  <rect x="200" y="76" width="180" height="48" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="290" y="96" text-anchor="middle" fill="#201F18" font-weight="700" font-family="Menlo, monospace" font-size="11.5">toStartOfHour(ts)</text>
+  <text x="290" y="113" text-anchor="middle" fill="#201F18" font-size="10">"몇 시대인가"로 뭉갠다</text>
+
+  <g stroke="#D99E00" stroke-width="1.3" marker-end="url(#arr-tb)">
+    <line x1="122" y1="52"  x2="194" y2="86"/>
+    <line x1="122" y1="76"  x2="194" y2="94"/>
+    <line x1="122" y1="100" x2="194" y2="100"/>
+    <line x1="122" y1="124" x2="194" y2="106"/>
+    <line x1="122" y1="148" x2="194" y2="114"/>
+  </g>
+
+  <!-- 버킷 결과 -->
+  <text x="540" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">같은 값 = 같은 그룹 → GROUP BY</text>
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="440" y="44" width="200" height="56" rx="8" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="440" y="112" width="200" height="56" rx="8" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="11" fill="currentColor">
+    <text x="452" y="66">09:00:00 ← 3행</text>
+    <text x="452" y="86" font-size="10" opacity="0.7">09:03, 09:41, 09:58</text>
+    <text x="452" y="134">10:00:00 ← 2행</text>
+    <text x="452" y="154" font-size="10" opacity="0.7">10:02, 10:37</text>
+  </g>
+  <g stroke="#D99E00" stroke-width="1.4" marker-end="url(#arr-tb)">
+    <line x1="380" y1="90"  x2="434" y2="72"/>
+    <line x1="380" y1="110" x2="434" y2="140"/>
+  </g>
+
+  <text x="340" y="202" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">"시간대별 집계"의 원리 — 초 단위를 뭉개 같은 그룹 키를 만든다. 15분 버킷은 toStartOfInterval(ts, INTERVAL 15 MINUTE),</text>
+  <text x="340" y="220" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">일·주·월은 toStartOfDay / Week / Month — 함수만 바꾸면 어떤 해상도로든 같은 패턴이다.</text>
+</svg>
+<figcaption>toStartOfHour가 흩어진 타임스탬프를 시간대 시작 시각으로 변환하면, 같은 시간대의 행들이 같은 값을 갖게 되어 GROUP BY로 묶인다</figcaption></figure>
 <pre class="code" data-lang="sql"><code>SELECT toStartOfHour(ts), count() FROM events GROUP BY 1;   -- 시간별
 -- 계열: toStartOfMinute / Day / Week / Month / Quarter / Year
 -- 다른 DB에서 온 사람용 동의어: dateTrunc(&#x27;hour&#x27;, ts) = toStartOfHour(ts)
@@ -610,6 +745,43 @@ SELECT version(), hostName();</code></pre>
 <li><a href="https://clickhouse.com/docs/sql-reference/functions">SQL Reference → Functions</a> 카테고리에서 훑기</li>
 <li><code>system.functions</code> 테이블 검색: <code>SELECT name FROM system.functions WHERE name ILIKE '%split%'</code></li>
 </ol>
+<h2 id="s15">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>이벤트를 15분 단위로 묶어 집계하려면?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">toStartOfHour(ts) / 4</button>
+<button type="button" class="opt" data-correct="1">toStartOfInterval(ts, INTERVAL 15 MINUTE)</button>
+<button type="button" class="opt" data-correct="0">round(ts, 15)</button>
+</div>
+<div class="quiz-exp">💡 임의 간격 버킷은 toStartOfInterval이다. 시간/일/월은 toStartOfHour/Day/Month 계열 (10.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span>Apache 로그 형식 '16/Aug/2026:14:30:00'을 파싱하는 올바른 방법은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">parseDateTimeBestEffort('16/Aug/2026:14:30:00')</button>
+<button type="button" class="opt" data-correct="1">parseDateTime('16/Aug/2026:14:30:00', '%d/%b/%Y:%H:%i:%s')</button>
+<button type="button" class="opt" data-correct="0">toDateTime('16/Aug/2026:14:30:00')</button>
+</div>
+<div class="quiz-exp">💡 BestEffort는 이 형식을 못 읽는다 (26.8 실측 — 연도 뒤 콜론에서 실패). 포맷을 아는 형식은 parseDateTime + 포맷 문자열이 정답 (10.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span><code>SELECT [10, 20, 30][1]</code>의 결과는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="1">10</button>
+<button type="button" class="opt" data-correct="0">20</button>
+<button type="button" class="opt" data-correct="0">에러</button>
+</div>
+<div class="quiz-exp">💡 ClickHouse 배열 인덱스는 1부터 시작한다. [1] = 첫 원소 = 10 (10.4절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span><code>dateDiff('month', '2021-12-29', '2022-01-01')</code>과 <code>age('month', ...)</code>의 결과는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">둘 다 0</button>
+<button type="button" class="opt" data-correct="1">dateDiff = 1, age = 0</button>
+<button type="button" class="opt" data-correct="0">둘 다 1</button>
+</div>
+<div class="quiz-exp">💡 dateDiff는 "월 경계를 넘은 횟수"(12월→1월 = 1), age는 "완전히 채워진 개월 수"(3일뿐 = 0). 시험 함정 포인트 (10.2절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="09-select-deep-dive.html"><span class="pn-label">← 이전</span><span class="pn-title">9장 · SELECT 심화</span></a><a class="pn next" href="11-aggregation-window.html"><span class="pn-label">다음 →</span><span class="pn-title">11장 · 함수 레퍼런스 ②</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -620,5 +792,43 @@ SELECT version(), hostName();</code></pre>
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

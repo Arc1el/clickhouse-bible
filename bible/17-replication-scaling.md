@@ -170,3 +170,37 @@ RESTORE TABLE events FROM Disk('backups', 'events_2026_08_16.zip');
 ```
 
 파티션 단위 백업/복원, 증분 백업도 지원한다. Cloud는 자동 백업 제공.
+
+## 이해도 체크
+
+```quiz
+Q: 복제(replication)와 샤딩(sharding)의 차이는?
+1) 같은 말이다
+2) 복제는 같은 데이터의 사본(안전), 샤딩은 데이터 분할(용량·성능) *
+3) 샤딩이 복제의 구버전이다
+E: 복제는 서버 장애 대비, 샤딩은 한 대에 안 담기는 규모 대응이다. 보통 "N샤드 × M레플리카"로 조합한다 (17.1절).
+```
+
+```quiz
+Q: ClickHouse Keeper의 역할은?
+1) 데이터를 저장하는 백업 서버
+2) 복제 메타데이터(part 목록 등)의 합의·조정 *
+3) 쿼리 속도 향상 캐시
+E: Keeper는 데이터가 아니라 "누가 어떤 part를 갖고 있나"의 합의만 담당한다 (RAFT). ZooKeeper의 클라이언트 프로토콜 호환 대체품이다 (17.2절).
+```
+
+```quiz
+Q: Distributed 테이블의 정체는?
+1) 데이터를 나눠 저장하는 특수 MergeTree
+2) 저장 없이 샤드로 분배·취합만 하는 라우터 *
+3) 백업 전용 엔진
+E: 자체 저장이 없다. INSERT는 샤딩 키로 분배하고, SELECT는 각 샤드의 부분 집계를 모아 병합한다 (17.4절).
+```
+
+```quiz
+Q: 로컬 테이블이 ReplicatedMergeTree인데 클러스터 설정의 internal_replication이 false라면?
+1) 아무 문제 없다
+2) Distributed와 Replicated가 각각 복제해 데이터가 이중 삽입된다 *
+3) 복제가 안 된다
+E: Replicated를 쓸 때는 반드시 internal_replication=true — Distributed는 샤드당 한 레플리카에만 쓰고 복제는 엔진에 맡긴다 (17.4절).
+```

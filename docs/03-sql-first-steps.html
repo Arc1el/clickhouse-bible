@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -532,6 +615,63 @@ GROUP BY 묶을 기준       -- ④ 묶어서 집계할까
 HAVING   집계 결과 조건  -- ⑤ 집계 결과를 다시 필터
 ORDER BY 정렬 기준       -- ⑥ 어떤 순서로
 LIMIT    개수            -- ⑦ 몇 개만</code></pre>
+<p>쓰는 순서와 실행되는 순서가 다르다는 것이 SQL 이해의 첫 열쇠다 — 엔진은 항상 FROM(어디서)부터 생각한다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 300" role="img" aria-label="SELECT 문은 위에서부터 쓰지만 실행은 FROM부터 시작해 WHERE, GROUP BY, HAVING, SELECT, ORDER BY, LIMIT 순서로 진행된다. WHERE는 집계 전 행을 거르고 HAVING은 집계 후 결과를 거른다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-sel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="150" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">쓰는 순서 (문법)</text>
+  <text x="480" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">실행되는 순서 (엔진의 사고 과정)</text>
+
+  <!-- 쓰는 순서 -->
+  <g font-family="Menlo, monospace" font-size="12" fill="currentColor">
+    <text x="60" y="60">SELECT   …</text>
+    <text x="60" y="92">FROM     …</text>
+    <text x="60" y="124">WHERE    …</text>
+    <text x="60" y="156">GROUP BY …</text>
+    <text x="60" y="188">HAVING   …</text>
+    <text x="60" y="220">ORDER BY …</text>
+    <text x="60" y="252">LIMIT    …</text>
+  </g>
+  <!-- 실행 순번 배지 -->
+  <g font-size="10.5" font-weight="700" text-anchor="middle">
+    <circle cx="40" cy="56"  r="10" fill="#F2C230"/><text x="40" y="60"  fill="#201F18">5</text>
+    <circle cx="40" cy="88"  r="10" fill="#F2C230"/><text x="40" y="92"  fill="#201F18">1</text>
+    <circle cx="40" cy="120" r="10" fill="#F2C230"/><text x="40" y="124" fill="#201F18">2</text>
+    <circle cx="40" cy="152" r="10" fill="#F2C230"/><text x="40" y="156" fill="#201F18">3</text>
+    <circle cx="40" cy="184" r="10" fill="#F2C230"/><text x="40" y="188" fill="#201F18">4</text>
+    <circle cx="40" cy="216" r="10" fill="#F2C230"/><text x="40" y="220" fill="#201F18">6</text>
+    <circle cx="40" cy="248" r="10" fill="#F2C230"/><text x="40" y="252" fill="#201F18">7</text>
+  </g>
+
+  <!-- 실행 파이프라인 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="330" y="40"  width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="76"  width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="112" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="148" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="184" width="300" height="30" rx="6" fill="#F2C230"/>
+    <rect x="330" y="220" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="256" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-size="11" fill="currentColor">
+    <text x="342" y="59">① FROM — 어느 테이블에서</text>
+    <text x="342" y="95">② WHERE — <tspan font-weight="700">집계 전</tspan> 행을 거른다</text>
+    <text x="342" y="131">③ GROUP BY — 남은 행을 묶는다</text>
+    <text x="342" y="167">④ HAVING — <tspan font-weight="700">집계 후</tspan> 결과를 거른다</text>
+    <text x="342" y="239">⑥ ORDER BY — 결과를 정렬</text>
+    <text x="342" y="275">⑦ LIMIT — 위에서 N개만</text>
+  </g>
+  <text x="342" y="203" font-size="11" fill="#201F18">⑤ SELECT — 이제야 컬럼을 고르고 계산</text>
+
+  <text x="150" y="282" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="10.5">별칭(AS)을 WHERE에서 못 쓰는 표준 SQL의 이유가</text>
+  <text x="150" y="297" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="10.5">이 순서다 (ClickHouse는 예외적으로 허용)</text>
+</svg>
+<figcaption>SELECT 문은 위에서부터 쓰지만, 엔진은 FROM→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT 순으로 실행한다</figcaption></figure>
 <p>하나씩 실행해 보자.</p>
 <h3 id="s5">전체 조회와 필터</h3>
 <pre class="code" data-lang="sql"><code>-- 전부 보기 (*는 &quot;모든 컬럼&quot;)
@@ -629,6 +769,43 @@ SELECT avg(price) FROM menu WHERE spicy;
 SELECT category, max(price) AS max_price FROM menu
 GROUP BY category HAVING max_price &gt;= 12000;</code></pre>
 </details>
+<h2 id="s12">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>집계 결과(예: count() &gt;= 2)를 조건으로 걸려면 어디에 쓰는가?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">WHERE</button>
+<button type="button" class="opt" data-correct="1">HAVING</button>
+<button type="button" class="opt" data-correct="0">ORDER BY</button>
+</div>
+<div class="quiz-exp">💡 WHERE는 집계 "전" 행을 거르고, HAVING은 GROUP BY 집계 "후" 결과를 거른다. 실행 순서(FROM→WHERE→GROUP BY→HAVING)를 기억하자 (3.4절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span>문자열 리터럴의 올바른 표기는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">WHERE name = "김치찌개"</button>
+<button type="button" class="opt" data-correct="1">WHERE name = '김치찌개'</button>
+<button type="button" class="opt" data-correct="0">WHERE name = 김치찌개</button>
+</div>
+<div class="quiz-exp">💡 작은따옴표가 문자열이다. 큰따옴표는 컬럼·테이블 이름(식별자)용이라 "그런 컬럼 없음" 에러가 난다 (3.1, 3.7절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span>SELECT 문에서 엔진이 가장 먼저 실행하는 절은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">SELECT</button>
+<button type="button" class="opt" data-correct="1">FROM</button>
+<button type="button" class="opt" data-correct="0">LIMIT</button>
+</div>
+<div class="quiz-exp">💡 쓰는 순서와 달리 실행은 FROM(어디서)→WHERE→GROUP BY→HAVING→SELECT→ORDER BY→LIMIT 순이다 (3.4절 다이어그램).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>ClickHouse의 CREATE TABLE에서 MySQL과 달리 반드시 지정해야 하는 것은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">PRIMARY KEY</button>
+<button type="button" class="opt" data-correct="1">ENGINE</button>
+<button type="button" class="opt" data-correct="0">CHARSET</button>
+</div>
+<div class="quiz-exp">💡 ClickHouse 테이블은 반드시 엔진(Memory, MergeTree 등)을 지정한다. 실전은 거의 항상 MergeTree다 (3.2절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="02-setup.html"><span class="pn-label">← 이전</span><span class="pn-title">2장 · 설치와 실습 환경</span></a><a class="pn next" href="04-data-types.html"><span class="pn-label">다음 →</span><span class="pn-title">4장 · 데이터 타입 대전</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -639,5 +816,43 @@ GROUP BY category HAVING max_price &gt;= 12000;</code></pre>
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

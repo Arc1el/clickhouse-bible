@@ -149,3 +149,45 @@ SELECT name FROM system.functions WHERE name ILIKE '%split%';  -- 함수 찾기
 18. `position('대상','찾을것')` vs `locate('찾을것','대상')` — 인자 순서 반대
 19. LowCardinality는 고유값 **10만 초과 시 역효과** — user_id·URL에 쓰지 말 것
 20. 뮤테이션은 순차 실행 — 실패한 뮤테이션 하나가 **큐 전체를 막는다** (system.mutations 확인)
+
+## 최종 점검 퀴즈 — 함정 리스트 무작위 확인
+
+```quiz
+Q: sum(Decimal(18,2))의 결과를 저장할 컬럼 타입은?
+1) Decimal(18,2)
+2) Decimal(38,2) *
+3) Float64
+E: 집계 결과 타입은 오버플로 방지를 위해 커진다. MV 대상 테이블에서 타입 불일치 에러의 단골 원인 (함정 2).
+```
+
+```quiz
+Q: quantilesState(0.5, 0.9)로 저장한 상태를 읽는 문법은?
+1) quantilesMerge(col)
+2) quantilesMerge(0.5, 0.9)(col) *
+3) quantiles(col)
+E: 파라미터형 함수는 Merge 쪽에도 같은 파라미터를 반복해야 한다 — 빠뜨리면 에러 (함정 13).
+```
+
+```quiz
+Q: ClickHouse Cloud에서 지원되지 않는 테이블 함수는?
+1) s3()
+2) file() *
+3) url()
+E: Cloud에는 로컬 파일 시스템 접근이 없다. file() 예제는 s3(url, NOSIGN)이나 url()로 대체한다 (함정 17).
+```
+
+```quiz
+Q: `position('abcabc', 'ca')`와 `locate('ca', 'abcabc')`의 관계는?
+1) 인자 순서가 반대인 같은 기능 — 둘 다 3 *
+2) 전혀 다른 함수
+3) locate는 없는 함수다
+E: locate는 MySQL 호환용으로 인자가 반대다. 헷갈리면 position만 쓰자 (함정 18).
+```
+
+```quiz
+Q: 12과제 실기 중 뮤테이션(ALTER DELETE 등) 결과를 검증하기 전에 붙여야 할 설정은?
+1) max_threads = 1
+2) mutations_sync = 1 *
+3) async_insert = 1
+E: 뮤테이션은 기본 비동기라 검증 시점에 아직 안 끝났을 수 있다. 완료 대기 후 채점받는 습관이 점수를 지킨다 (I절).
+```

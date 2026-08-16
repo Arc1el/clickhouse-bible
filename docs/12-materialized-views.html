@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -755,6 +838,52 @@ DROP TABLE purchases_mv;           -- MV 삭제 (TO 방식이면 대상 테이�
 <li>MV SELECT에 JOIN — 오른쪽 테이블 변경이 반영 안 되는 걸 모르고 사용</li>
 <li>UNION ALL이 든 MV — 첫 번째 원본에만 트리거 (12.7)</li>
 </ol>
+<h2 id="s12">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>MV를 만들기 "전"에 원본 테이블에 있던 데이터는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">자동으로 대상 테이블에 반영된다</button>
+<button type="button" class="opt" data-correct="1">반영되지 않는다 — 경계를 정해 수동 백필해야 한다</button>
+<button type="button" class="opt" data-correct="0">MV 생성 시 에러가 난다</button>
+</div>
+<div class="quiz-exp">💡 MV는 생성 이후의 INSERT에만 반응하는 트리거다. 경계 시각 필터 + 수동 INSERT가 중복·누락 없는 표준 백필이다 (12.1~12.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span><code>uniqState(user_id)</code>로 저장한 컬럼을 읽는 올바른 방법은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">SELECT users FROM daily_stats</button>
+<button type="button" class="opt" data-correct="1">SELECT uniqMerge(users) ... GROUP BY day</button>
+<button type="button" class="opt" data-correct="0">SELECT uniq(users) ...</button>
+</div>
+<div class="quiz-exp">💡 State로 쓴 것은 반드시 Merge + GROUP BY로 읽는다. 그냥 읽으면 바이너리 상태가 나온다 (12.5절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span>MV의 GROUP BY 키가 대상 테이블 ORDER BY보다 세밀하면 (예: GROUP BY d,app,os vs ORDER BY (d,app))?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">에러가 나서 바로 알 수 있다</button>
+<button type="button" class="opt" data-correct="1">행이 조용히 소실되고 키에 없는 컬럼은 임의 값만 남는다</button>
+<button type="button" class="opt" data-correct="0">자동으로 ORDER BY가 수정된다</button>
+</div>
+<div class="quiz-exp">💡 26.8 실측 — ios/android 2행이 1행으로 합쳐지며 os 구분이 사라졌다. 에러도 경고도 없다. 대상 ORDER BY = MV GROUP BY 규칙을 지켜라 (12.8절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>MV의 SELECT에 JOIN이 들어 있다면 트리거 조건은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">양쪽 테이블 모두의 INSERT</button>
+<button type="button" class="opt" data-correct="1">왼쪽(원본) 테이블의 INSERT에만</button>
+<button type="button" class="opt" data-correct="0">오른쪽 테이블의 INSERT에만</button>
+</div>
+<div class="quiz-exp">💡 MV는 "INSERT 스트림"에 붙는다. 오른쪽 테이블 변경은 무시된다 — JOIN 양쪽을 다 반영하려면 Refreshable MV를 검토 (12.1, 12.6절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q5.</span>일반(incremental) MV와 Refreshable MV의 차이는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">이름만 다르고 같다</button>
+<button type="button" class="opt" data-correct="1">일반 MV는 INSERT마다 신규 블록만, Refreshable은 주기적으로 전체 재계산</button>
+<button type="button" class="opt" data-correct="0">Refreshable이 항상 더 빠르다</button>
+</div>
+<div class="quiz-exp">💡 Refreshable은 cron처럼 주기 실행되는 스냅샷이라 JOIN도 자유롭지만 주기만큼 지연된다. 생성 즉시 최초 리프레시가 돈다는 점도 일반 MV와 정반대 (12.6절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="11-aggregation-window.html"><span class="pn-label">← 이전</span><span class="pn-title">11장 · 함수 레퍼런스 ②</span></a><a class="pn next" href="13-projections-skipping-indexes.html"><span class="pn-label">다음 →</span><span class="pn-title">13장 · Projection과 Data Skipping Index</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -765,5 +894,43 @@ DROP TABLE purchases_mv;           -- MV 삭제 (TO 방식이면 대상 테이�
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

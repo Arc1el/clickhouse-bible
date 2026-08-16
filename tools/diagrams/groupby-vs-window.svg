@@ -1,0 +1,65 @@
+<svg viewBox="0 0 680 270" role="img" aria-label="GROUP BY는 여러 행을 요약값 하나로 줄이지만, 윈도우 함수는 행을 그대로 유지한 채 옆에 집계 결과 컬럼을 붙인다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-gw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 원본 테이블 -->
+  <text x="90" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">원본 4행</text>
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="20" y="36"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="60"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="84"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="108" width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="30" y="52">KR  A  100</text>
+    <text x="30" y="76">KR  B  300</text>
+    <text x="30" y="100">US  A  500</text>
+    <text x="30" y="124">US  B  100</text>
+  </g>
+
+  <!-- GROUP BY 경로 -->
+  <line x1="160" y1="60" x2="240" y2="60" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-gw)"/>
+  <text x="200" y="50" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">GROUP BY 국가</text>
+  <text x="352" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">행이 줄어든다 (요약)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="248" y="40" width="200" height="24" fill="#F2C230"/>
+    <rect x="248" y="64" width="200" height="24" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="#201F18">
+    <text x="258" y="56">KR  sum=400</text>
+    <text x="258" y="80">US  sum=600</text>
+  </g>
+  <text x="352" y="106" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">4행 → 2행. 개별 행 정보는 사라짐</text>
+
+  <!-- 윈도우 경로 -->
+  <line x1="160" y1="112" x2="240" y2="150" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-gw)"/>
+  <text x="176" y="140" font-size="10.5" fill="#D99E00" font-weight="700">sum() OVER</text>
+  <text x="176" y="154" font-size="10.5" fill="#D99E00" font-weight="700">(PARTITION BY 국가)</text>
+  <text x="420" y="140" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">행이 유지된다 (옆에 붙임)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="248" y="150" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="174" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="198" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="222" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="428" y="150" width="90" height="96" fill="#F2C230" fill-opacity="0.85"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="258" y="166">KR  A  100</text>
+    <text x="258" y="190">KR  B  300</text>
+    <text x="258" y="214">US  A  500</text>
+    <text x="258" y="238">US  B  100</text>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="#201F18" font-weight="700">
+    <text x="440" y="166">그룹합 400</text>
+    <text x="440" y="190">그룹합 400</text>
+    <text x="440" y="214">그룹합 600</text>
+    <text x="440" y="238">그룹합 600</text>
+  </g>
+  <text x="560" y="200" font-size="10" fill="currentColor" opacity="0.65">새 컬럼이</text>
+  <text x="560" y="214" font-size="10" fill="currentColor" opacity="0.65">붙을 뿐</text>
+
+  <text x="340" y="264" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">"매출 비중(행 값 ÷ 그룹합)"처럼 개별 행과 집계값이 동시에 필요하면 윈도우 — 요약만 필요하면 GROUP BY.</text>
+</svg>

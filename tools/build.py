@@ -52,6 +52,40 @@ def diagram_html(alt, fname):
     return ('<figure class="diagram">\n%s\n<figcaption>%s</figcaption></figure>'
             % (svg, inline(alt)))
 
+def quiz_html(buf, num):
+    """```quiz 블록 파싱: Q:/1)~n) (정답은 끝에 ' *')/E: 해설"""
+    question, options, exp = '', [], []
+    mode = None
+    for ln in buf:
+        if ln.startswith('Q:'):
+            question = ln[2:].strip(); mode = 'q'
+        elif re.match(r'^\d+\)\s', ln):
+            text = re.sub(r'^\d+\)\s*', '', ln)
+            correct = text.rstrip().endswith('*')
+            if correct:
+                text = text.rstrip()[:-1].rstrip()
+            options.append((text, correct)); mode = 'o'
+        elif ln.startswith('E:'):
+            exp.append(ln[2:].strip()); mode = 'e'
+        elif mode == 'e' and ln.strip():
+            exp.append(ln.strip())
+        elif mode == 'q' and ln.strip():
+            question += ' ' + ln.strip()
+    if not question or not options:
+        raise SystemExit('quiz 블록 파싱 실패: %r' % buf[:2])
+    if sum(1 for _, c in options if c) != 1:
+        raise SystemExit('quiz 정답 표시(*)는 정확히 1개여야 함: %s' % question)
+    h = ['<div class="quiz">']
+    h.append('<p class="quiz-q"><span class="qnum">Q%d.</span>%s</p>' % (num, inline(question)))
+    h.append('<div class="quiz-opts">')
+    for text, correct in options:
+        h.append('<button type="button" class="opt" data-correct="%d">%s</button>'
+                 % (1 if correct else 0, inline(text)))
+    h.append('</div>')
+    h.append('<div class="quiz-exp">💡 %s</div>' % inline(' '.join(exp)))
+    h.append('</div>')
+    return '\n'.join(h)
+
 def convert(md):
     """마크다운 본문 → HTML (h1은 건너뛰고 별도 처리)"""
     out = []
@@ -59,6 +93,7 @@ def convert(md):
     i = 0
     in_ul = in_ol = in_bq = False
     sec_n = 0
+    quiz_n = 0
 
     def close_lists():
         nonlocal in_ul, in_ol, in_bq
@@ -75,8 +110,12 @@ def convert(md):
             i += 1
             while i < len(lines) and not lines[i].startswith('```'):
                 buf.append(lines[i]); i += 1
-            out.append('<pre class="code" data-lang="%s"><code>%s</code></pre>'
-                       % (html.escape(lang), html.escape('\n'.join(buf))))
+            if lang == 'quiz':
+                quiz_n += 1
+                out.append(quiz_html(buf, quiz_n))
+            else:
+                out.append('<pre class="code" data-lang="%s"><code>%s</code></pre>'
+                           % (html.escape(lang), html.escape('\n'.join(buf))))
             i += 1
             continue
         if ln.strip().startswith('<details>') or ln.strip().startswith('</details>') \

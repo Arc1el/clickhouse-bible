@@ -190,3 +190,37 @@ TTL ts + INTERVAL 90 DAY;
 ②(도메인별 집계)는 ORDER BY로 커버되지 않는다 → 14~15장의
 Materialized View 또는 Projection으로 해결한다. **"모든 쿼리를 하나의 ORDER BY로
 잡을 수 없을 때 무엇을 추가하는가"가 시험 영역 4의 주제다.**
+
+## 이해도 체크
+
+```quiz
+Q: ORDER BY 키에서 컬럼 순서의 원칙은?
+1) 알파벳 순서
+2) 카디널리티(고유값 수)가 낮은 컬럼을 앞에 *
+3) 카디널리티가 높은 컬럼을 앞에
+E: 낮은 카디널리티가 앞이어야 값이 디스크에서 한 덩어리로 모여 건너뛸 수 있다. 실측: 올바른 순서 251/1223 granule vs 잘못된 순서 1223/1223 풀스캔 (6.1절).
+```
+
+```quiz
+Q: TTL로 만료된 데이터는 언제 실제로 지워지는가?
+1) 시간이 지나는 즉시
+2) 백그라운드 merge가 일어날 때 *
+3) 서버 재시작 시
+E: TTL 적용은 merge 시점이다. 즉시 정리하려면 OPTIMIZE TABLE ... FINAL, 기존 part 소급 적용은 MATERIALIZE TTL (6.2절).
+```
+
+```quiz
+Q: `CODEC(Delta)` 단독 지정이 권장되지 않는 이유는?
+1) Delta는 문자열 전용이라서
+2) Delta는 데이터 준비용 codec이라 뒤에 범용 codec(ZSTD 등)이 와야 해서 *
+3) Delta가 deprecated라서
+E: Delta/DoubleDelta/GCD는 압축이 잘 되게 데이터를 변환할 뿐이다. `CODEC(Delta, ZSTD)`처럼 체인으로 쓴다. codec이 역효과를 낼 수도 있으니 적용 후 확인 필수 (6.3절).
+```
+
+```quiz
+Q: "특정 status의 최근 조회"와 "도메인별 일간 집계" 두 쿼리 패턴이 있다. ORDER BY (status, ts)로 잡았다면 두 번째 쿼리는?
+1) 자동으로 빨라진다
+2) ORDER BY로는 커버되지 않는다 — MV나 Projection으로 해결 *
+3) 파티션을 잘게 나누면 해결된다
+E: 하나의 ORDER BY로 모든 쿼리를 잡을 수 없다. 그 간극을 메우는 것이 시험 영역 4(MV·Projection·Skip Index)다 (6.5절).
+```

@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -588,8 +671,163 @@ SELECT toInt32OrZero(&#x27;abc&#x27;);   -- 0
 SELECT accurateCast(200, &#x27;Int8&#x27;);        -- 범위 초과 시 에러 (안전)
 SELECT accurateCastOrNull(200, &#x27;Int8&#x27;);  -- 범위 초과 시 NULL</code></pre>
 <h2 id="s14">4.11 시험 대비 타입 선택 훈련</h2>
+<p>이 장 전체를 결정 트리 하나로 요약하면 다음과 같다. 시험장에서 컬럼을 볼 때마다 이 트리를 머릿속에서 타면 된다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 330" role="img" aria-label="데이터 종류별 타입 선택 결정 트리. 숫자는 음수 여부와 범위로, 문자열은 고유값 수로, 시간은 정밀도로, 돈은 Decimal로 결정한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-type" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <rect x="270" y="14" width="140" height="36" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="37" text-anchor="middle" fill="#201F18" font-weight="700">이 컬럼의 정체는?</text>
+
+  <g stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-type)">
+    <line x1="290" y1="50" x2="105" y2="80"/>
+    <line x1="322" y1="50" x2="260" y2="80"/>
+    <line x1="358" y1="50" x2="420" y2="80"/>
+    <line x1="392" y1="50" x2="575" y2="80"/>
+  </g>
+  <g text-anchor="middle" font-weight="700" font-size="12" fill="currentColor">
+    <text x="105" y="100">정수</text>
+    <text x="260" y="100">문자열</text>
+    <text x="420" y="100">시간</text>
+    <text x="575" y="100">소수</text>
+  </g>
+
+  <!-- 정수 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.8">
+    <text x="105" y="122">음수가 있나?</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="85"  y1="128" x2="60"  y2="150"/>
+    <line x1="125" y1="128" x2="150" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">
+    <text x="58" y="146">없음</text><text x="152" y="146">있음</text>
+  </g>
+  <rect x="18"  y="156" width="88" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="62" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="currentColor">UInt8~64</text>
+  <text x="62" y="192" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">최댓값 기준</text>
+  <text x="62" y="204" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">최소 크기 선택</text>
+  <rect x="116" y="156" width="80" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="156" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="currentColor">Int8~64</text>
+  <text x="156" y="192" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">범위 표는</text>
+  <text x="156" y="204" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">4.1절 참조</text>
+
+  <!-- 문자열 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.8">
+    <text x="260" y="122">고유값이 ~1만 미만?</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="240" y1="128" x2="228" y2="150"/>
+    <line x1="280" y1="128" x2="295" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">
+    <text x="224" y="146">예</text><text x="299" y="146">아니오</text>
+  </g>
+  <rect x="206" y="156" width="118" height="52" rx="7" fill="#F2C230" stroke="#D99E00" stroke-width="1.2"/>
+  <text x="265" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="#201F18">LowCardinality</text>
+  <text x="265" y="190" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="#201F18">(String)</text>
+  <text x="265" y="203" text-anchor="middle" font-size="9.5" fill="#201F18" opacity="0.8">시험 단골!</text>
+  <rect x="334" y="156" width="70" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="369" y="182" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="currentColor">String</text>
+  <text x="369" y="198" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">길이 지정 불필요</text>
+
+  <!-- 시간 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.8">
+    <text x="470" y="122">초보다 정밀해야 하나?</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="448" y1="128" x2="440" y2="150"/>
+    <line x1="492" y1="128" x2="505" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">
+    <text x="434" y="146">아니오</text><text x="510" y="146">예</text>
+  </g>
+  <rect x="414" y="156" width="80" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="454" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" font-weight="700" fill="currentColor">DateTime</text>
+  <text x="454" y="192" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">4B · 초 단위</text>
+  <text x="454" y="204" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">날짜만이면 Date</text>
+  <rect x="504" y="156" width="96" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="552" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" font-weight="700" fill="currentColor">DateTime64(3)</text>
+  <text x="552" y="192" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">8B · 밀리초</text>
+  <text x="552" y="204" text-anchor="middle" font-size="9.5" fill="currentColor" opacity="0.7">N=6 마이크로초</text>
+
+  <!-- 소수 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.8">
+    <text x="618" y="122">오차 허용?</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="598" y1="128" x2="540" y2="222"/>
+    <line x1="636" y1="128" x2="648" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">
+    <text x="560" y="164">허용</text><text x="656" y="146">불가</text>
+  </g>
+  <rect x="610" y="156" width="64" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="642" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="9.5" font-weight="700" fill="currentColor">Decimal</text>
+  <text x="642" y="190" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">돈 = (18,2)</text>
+  <text x="642" y="202" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">오차 불가</text>
+  <rect x="506" y="228" width="66" height="40" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.1"/>
+  <text x="539" y="246" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="currentColor">Float64</text>
+  <text x="539" y="260" text-anchor="middle" font-size="9" fill="currentColor" opacity="0.7">센서·비율</text>
+
+  <text x="30" y="252" font-size="11" fill="currentColor" opacity="0.8">공통 마무리 질문 2개:</text>
+  <text x="30" y="272" font-size="11" fill="currentColor">① NULL이 정말 필요한가? → 웬만하면 <tspan font-family="Menlo, monospace">Nullable</tspan> 없이 기본값(0, '')으로</text>
+  <text x="30" y="292" font-size="11" fill="currentColor">② 더 작은 타입으로 충분한가? → <tspan font-weight="700">표현 범위를 만족하는 가장 작은 타입</tspan>이 정답 (채점 기준)</text>
+  <text x="30" y="318" font-size="10.5" fill="currentColor" opacity="0.65">예: 사용자 ID(수억) → UInt32 · 상태코드(100~599) → UInt16 · 국가코드 → LowCardinality(String) · 금액 → Decimal(18,2)</text>
+</svg>
+<figcaption>컬럼 타입 선택 결정 트리 — 정체(정수·문자열·시간·소수)를 정하고, 각 갈래의 질문 하나로 최종 타입에 도달한다</figcaption></figure>
 <p>다음 요구를 보고 타입을 즉답할 수 있어야 한다:</p>
 <div class="tablewrap"><table><thead><tr><th>데이터</th><th>정답</th><th>이유</th></tr></thead><tbody><tr><td>페이지 조회 시각 (초 단위면 충분)</td><td><code>DateTime</code></td><td>4B로 충분</td></tr><tr><td>API 응답 시간 ms (0~수만)</td><td><code>UInt16</code> 또는 <code>UInt32</code></td><td>음수 없음, 작게</td></tr><tr><td>HTTP 상태 코드 (100~599)</td><td><code>UInt16</code></td><td>255 초과이므로 UInt8 불가</td></tr><tr><td>국가 코드 ('KR', 'US', ...)</td><td><code>LowCardinality(String)</code></td><td>저카디널리티</td></tr><tr><td>로그 레벨 (4종)</td><td><code>LowCardinality(String)</code></td><td>〃</td></tr><tr><td>주문 금액 (통화)</td><td><code>Decimal(18, 2)</code></td><td>오차 불가</td></tr><tr><td>센서 온도</td><td><code>Float32</code></td><td>오차 허용</td></tr><tr><td>사용자 ID (최대 수억)</td><td><code>UInt32</code></td><td>42억까지 커버</td></tr><tr><td>이벤트 고유 ID</td><td><code>UUID</code> 또는 <code>UInt64</code></td><td></td></tr><tr><td>태그 목록</td><td><code>Array(String)</code></td><td></td></tr><tr><td>삭제 여부 플래그</td><td><code>Bool</code> 또는 <code>UInt8</code></td><td></td></tr></tbody></table></div>
+<h2 id="s15">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>사용자 ID(최대 수억 명, 음수 없음)에 가장 효율적인 타입은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">Int64</button>
+<button type="button" class="opt" data-correct="1">UInt32</button>
+<button type="button" class="opt" data-correct="0">String</button>
+</div>
+<div class="quiz-exp">💡 음수가 없으면 UInt, 최댓값(수억)을 여유 있게 덮는 최소 크기는 UInt32(약 42.9억)다. "표현 범위를 만족하는 가장 작은 타입"이 채점 기준이다 (4.1절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span><code>SELECT toInt8(200)</code>의 결과는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">200</button>
+<button type="button" class="opt" data-correct="0">에러 발생</button>
+<button type="button" class="opt" data-correct="1">-56 (조용한 오버플로)</button>
+</div>
+<div class="quiz-exp">💡 to계열 변환은 범위를 넘으면 에러 없이 값이 깨진다 (26.8 실측). 안전하게 하려면 <code>accurateCast(200, 'Int8')</code> — 이쪽은 에러를 던진다 (4.1절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span>로그 레벨('INFO','WARN','ERROR' 3종) 컬럼에 권장되는 타입은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">String</button>
+<button type="button" class="opt" data-correct="1">LowCardinality(String)</button>
+<button type="button" class="opt" data-correct="0">FixedString(5)</button>
+</div>
+<div class="quiz-exp">💡 고유값이 적은 문자열은 LowCardinality로 감싸면 사전 인코딩되어 저장·비교가 극적으로 빨라진다. 실측 압축률 208배 (4.4절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>LowCardinality를 쓰면 안 되는 컬럼은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">국가 코드 (~250종)</button>
+<button type="button" class="opt" data-correct="1">세션 토큰 (수백만 종)</button>
+<button type="button" class="opt" data-correct="0">HTTP 메서드 (10종 미만)</button>
+</div>
+<div class="quiz-exp">💡 고유값이 10만을 넘으면 일반 String보다 오히려 느려질 수 있다. user_id·URL·이메일·토큰은 금지 대상 (4.4절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q5.</span>주문 금액(통화)에 권장되는 타입은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">Float64</button>
+<button type="button" class="opt" data-correct="1">Decimal(18, 2)</button>
+<button type="button" class="opt" data-correct="0">UInt64에 센트 단위로... 도 가능하지만 표준은 아님</button>
+</div>
+<div class="quiz-exp">💡 돈은 이진 부동소수점 오차가 허용되지 않으므로 Decimal이다. 단 sum(Decimal(18,2))의 결과 타입은 Decimal(38,2)로 커진다는 것까지 기억하자 (4.2절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="03-sql-first-steps.html"><span class="pn-label">← 이전</span><span class="pn-title">3장 · SQL 첫걸음</span></a><a class="pn next" href="05-mergetree.html"><span class="pn-label">다음 →</span><span class="pn-title">5장 · MergeTree</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -600,5 +838,43 @@ SELECT accurateCastOrNull(200, &#x27;Int8&#x27;);  -- 범위 초과 시 NULL</co
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

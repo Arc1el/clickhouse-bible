@@ -173,3 +173,37 @@ set/minmax를 걸어도 모든 구간에 그 값이 존재해서 하나도 건�
    ├─ 구간별 값 종류가 적음 → set(N) 인덱스
    └─ 텍스트 검색 → tokenbf_v1(단어) / ngrambf_v1(부분 문자열)
 ```
+
+## 이해도 체크
+
+```quiz
+Q: `ALTER TABLE ... ADD PROJECTION`을 실행한 직후, 기존 데이터에 대한 쿼리는?
+1) 즉시 projection의 혜택을 받는다
+2) 혜택이 없다 — MATERIALIZE PROJECTION으로 기존 part에 소급 적용해야 한다 *
+3) 테이블이 잠긴다
+E: ADD는 "이후 삽입분"에만 적용된다. 시험 단골 함정 — ADD INDEX도 마찬가지로 MATERIALIZE INDEX가 필요하다 (13.2~13.3절).
+```
+
+```quiz
+Q: skipping index의 본질에 가장 가까운 설명은?
+1) 조건에 맞는 행의 위치를 찾아준다 (B-tree처럼)
+2) 구간 요약을 보고 "여기엔 답이 없다"가 증명되는 구간을 건너뛴다 *
+3) 데이터를 재정렬한다
+E: 답을 찾아주는 게 아니라 읽기를 면제해 주는 소극적 인덱스다. 값이 흩어져 있으면 하나도 못 건너뛴다 (13.3절).
+```
+
+```quiz
+Q: 시험이 명시한 skipping index 두 종류는?
+1) text와 bloom_filter
+2) set과 minmax *
+3) ngrambf와 tokenbf
+E: 공식 시험 범위 문구가 "Set 또는 minmax skipping index 정의"다. minmax는 범위 상관 숫자, set(N)은 구간별 값 종류가 적은 컬럼 (13.3절).
+```
+
+```quiz
+Q: 쿼리를 바꿀 수 없는 BI 도구 환경에서 다른 정렬이 필요하다면?
+1) Materialized View
+2) Projection — 옵티마이저가 자동 선택하므로 쿼리 수정 불필요 *
+3) 테이블을 매일 재생성
+E: projection은 원본 쿼리 그대로 두고 엔진이 유리한 쪽을 고른다. MV는 대상 테이블을 직접 조회해야 한다 (13.2절).
+```

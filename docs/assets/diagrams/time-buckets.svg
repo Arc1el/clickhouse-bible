@@ -1,0 +1,49 @@
+<svg viewBox="0 0 680 232" role="img" aria-label="흩어진 타임스탬프들을 toStartOfHour가 시간대의 시작 시각으로 변환하면 같은 시간대의 행들이 같은 값을 갖게 되어 GROUP BY로 묶인다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-tb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="130" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="#8B8878">제각각인 타임스탬프</text>
+  <g font-family="Menlo, monospace" font-size="11" fill="#8B8878">
+    <text x="46" y="56">09:03:21</text>
+    <text x="46" y="80">09:41:07</text>
+    <text x="46" y="104">09:58:44</text>
+    <text x="46" y="128">10:02:13</text>
+    <text x="46" y="152">10:37:55</text>
+  </g>
+
+  <!-- 변환 박스 -->
+  <rect x="200" y="76" width="180" height="48" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="290" y="96" text-anchor="middle" fill="#201F18" font-weight="700" font-family="Menlo, monospace" font-size="11.5">toStartOfHour(ts)</text>
+  <text x="290" y="113" text-anchor="middle" fill="#201F18" font-size="10">"몇 시대인가"로 뭉갠다</text>
+
+  <g stroke="#D99E00" stroke-width="1.3" marker-end="url(#arr-tb)">
+    <line x1="122" y1="52"  x2="194" y2="86"/>
+    <line x1="122" y1="76"  x2="194" y2="94"/>
+    <line x1="122" y1="100" x2="194" y2="100"/>
+    <line x1="122" y1="124" x2="194" y2="106"/>
+    <line x1="122" y1="148" x2="194" y2="114"/>
+  </g>
+
+  <!-- 버킷 결과 -->
+  <text x="540" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="#8B8878">같은 값 = 같은 그룹 → GROUP BY</text>
+  <g stroke="#8B8878" stroke-width="1.2">
+    <rect x="440" y="44" width="200" height="56" rx="8" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="440" y="112" width="200" height="56" rx="8" fill="#8B8878" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="11" fill="#8B8878">
+    <text x="452" y="66">09:00:00 ← 3행</text>
+    <text x="452" y="86" font-size="10" opacity="0.7">09:03, 09:41, 09:58</text>
+    <text x="452" y="134">10:00:00 ← 2행</text>
+    <text x="452" y="154" font-size="10" opacity="0.7">10:02, 10:37</text>
+  </g>
+  <g stroke="#D99E00" stroke-width="1.4" marker-end="url(#arr-tb)">
+    <line x1="380" y1="90"  x2="434" y2="72"/>
+    <line x1="380" y1="110" x2="434" y2="140"/>
+  </g>
+
+  <text x="340" y="202" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">"시간대별 집계"의 원리 — 초 단위를 뭉개 같은 그룹 키를 만든다. 15분 버킷은 toStartOfInterval(ts, INTERVAL 15 MINUTE),</text>
+  <text x="340" y="220" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">일·주·월은 toStartOfDay / Week / Month — 함수만 바꾸면 어떤 해상도로든 같은 패턴이다.</text>
+</svg>

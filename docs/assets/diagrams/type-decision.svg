@@ -1,0 +1,106 @@
+<svg viewBox="0 0 680 330" role="img" aria-label="데이터 종류별 타입 선택 결정 트리. 숫자는 음수 여부와 범위로, 문자열은 고유값 수로, 시간은 정밀도로, 돈은 Decimal로 결정한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-type" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B8878"/>
+    </marker>
+  </defs>
+
+  <rect x="270" y="14" width="140" height="36" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="37" text-anchor="middle" fill="#201F18" font-weight="700">이 컬럼의 정체는?</text>
+
+  <g stroke="#8B8878" stroke-width="1.3" marker-end="url(#arr-type)">
+    <line x1="290" y1="50" x2="105" y2="80"/>
+    <line x1="322" y1="50" x2="260" y2="80"/>
+    <line x1="358" y1="50" x2="420" y2="80"/>
+    <line x1="392" y1="50" x2="575" y2="80"/>
+  </g>
+  <g text-anchor="middle" font-weight="700" font-size="12" fill="#8B8878">
+    <text x="105" y="100">정수</text>
+    <text x="260" y="100">문자열</text>
+    <text x="420" y="100">시간</text>
+    <text x="575" y="100">소수</text>
+  </g>
+
+  <!-- 정수 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="#8B8878" opacity="0.8">
+    <text x="105" y="122">음수가 있나?</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="85"  y1="128" x2="60"  y2="150"/>
+    <line x1="125" y1="128" x2="150" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="#8B8878" opacity="0.6">
+    <text x="58" y="146">없음</text><text x="152" y="146">있음</text>
+  </g>
+  <rect x="18"  y="156" width="88" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="62" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="#8B8878">UInt8~64</text>
+  <text x="62" y="192" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">최댓값 기준</text>
+  <text x="62" y="204" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">최소 크기 선택</text>
+  <rect x="116" y="156" width="80" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="156" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="#8B8878">Int8~64</text>
+  <text x="156" y="192" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">범위 표는</text>
+  <text x="156" y="204" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">4.1절 참조</text>
+
+  <!-- 문자열 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="#8B8878" opacity="0.8">
+    <text x="260" y="122">고유값이 ~1만 미만?</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="240" y1="128" x2="228" y2="150"/>
+    <line x1="280" y1="128" x2="295" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="#8B8878" opacity="0.6">
+    <text x="224" y="146">예</text><text x="299" y="146">아니오</text>
+  </g>
+  <rect x="206" y="156" width="118" height="52" rx="7" fill="#F2C230" stroke="#D99E00" stroke-width="1.2"/>
+  <text x="265" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="#201F18">LowCardinality</text>
+  <text x="265" y="190" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="#201F18">(String)</text>
+  <text x="265" y="203" text-anchor="middle" font-size="9.5" fill="#201F18" opacity="0.8">시험 단골!</text>
+  <rect x="334" y="156" width="70" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="369" y="182" text-anchor="middle" font-family="Menlo, monospace" font-size="11" font-weight="700" fill="#8B8878">String</text>
+  <text x="369" y="198" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">길이 지정 불필요</text>
+
+  <!-- 시간 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="#8B8878" opacity="0.8">
+    <text x="470" y="122">초보다 정밀해야 하나?</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="448" y1="128" x2="440" y2="150"/>
+    <line x1="492" y1="128" x2="505" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="#8B8878" opacity="0.6">
+    <text x="434" y="146">아니오</text><text x="510" y="146">예</text>
+  </g>
+  <rect x="414" y="156" width="80" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="454" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" font-weight="700" fill="#8B8878">DateTime</text>
+  <text x="454" y="192" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">4B · 초 단위</text>
+  <text x="454" y="204" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">날짜만이면 Date</text>
+  <rect x="504" y="156" width="96" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="552" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" font-weight="700" fill="#8B8878">DateTime64(3)</text>
+  <text x="552" y="192" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">8B · 밀리초</text>
+  <text x="552" y="204" text-anchor="middle" font-size="9.5" fill="#8B8878" opacity="0.7">N=6 마이크로초</text>
+
+  <!-- 소수 분기 -->
+  <g text-anchor="middle" font-size="10.5" fill="#8B8878" opacity="0.8">
+    <text x="618" y="122">오차 허용?</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.1" marker-end="url(#arr-type)">
+    <line x1="598" y1="128" x2="540" y2="222"/>
+    <line x1="636" y1="128" x2="648" y2="150"/>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="#8B8878" opacity="0.6">
+    <text x="560" y="164">허용</text><text x="656" y="146">불가</text>
+  </g>
+  <rect x="610" y="156" width="64" height="52" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="642" y="176" text-anchor="middle" font-family="Menlo, monospace" font-size="9.5" font-weight="700" fill="#8B8878">Decimal</text>
+  <text x="642" y="190" text-anchor="middle" font-size="9" fill="#8B8878" opacity="0.7">돈 = (18,2)</text>
+  <text x="642" y="202" text-anchor="middle" font-size="9" fill="#8B8878" opacity="0.7">오차 불가</text>
+  <rect x="506" y="228" width="66" height="40" rx="7" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="539" y="246" text-anchor="middle" font-family="Menlo, monospace" font-size="10" font-weight="700" fill="#8B8878">Float64</text>
+  <text x="539" y="260" text-anchor="middle" font-size="9" fill="#8B8878" opacity="0.7">센서·비율</text>
+
+  <text x="30" y="252" font-size="11" fill="#8B8878" opacity="0.8">공통 마무리 질문 2개:</text>
+  <text x="30" y="272" font-size="11" fill="#8B8878">① NULL이 정말 필요한가? → 웬만하면 <tspan font-family="Menlo, monospace">Nullable</tspan> 없이 기본값(0, '')으로</text>
+  <text x="30" y="292" font-size="11" fill="#8B8878">② 더 작은 타입으로 충분한가? → <tspan font-weight="700">표현 범위를 만족하는 가장 작은 타입</tspan>이 정답 (채점 기준)</text>
+  <text x="30" y="318" font-size="10.5" fill="#8B8878" opacity="0.65">예: 사용자 ID(수억) → UInt32 · 상태코드(100~599) → UInt16 · 국가코드 → LowCardinality(String) · 금액 → Decimal(18,2)</text>
+</svg>

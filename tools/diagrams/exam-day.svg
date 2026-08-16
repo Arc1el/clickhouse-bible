@@ -1,0 +1,33 @@
+<svg viewBox="0 0 680 210" role="img" aria-label="시험 2시간의 배분 전략. 처음 5분은 전체 과제 훑기, 이후 60분은 쉬운 과제 우선 처리, 45분은 어려운 과제와 문서 검색, 마지막 10분은 전체 검증에 쓴다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <text x="340" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">시험 120분 배분 전략 (합격 후기 종합)</text>
+
+  <!-- 타임라인 바 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="30"  y="44" width="27"  height="44" fill="#F2C230"/>
+    <rect x="57"  y="44" width="300" height="44" fill="currentColor" fill-opacity="0.06"/>
+    <rect x="357" y="44" width="230" height="44" fill="currentColor" fill-opacity="0.12"/>
+    <rect x="587" y="44" width="55"  height="44" fill="#F2C230"/>
+  </g>
+  <g text-anchor="middle" font-weight="700" font-size="11">
+    <text x="43"  y="63" fill="#201F18">5분</text>
+    <text x="207" y="63" fill="currentColor">~60분</text>
+    <text x="472" y="63" fill="currentColor">~45분</text>
+    <text x="614" y="63" fill="#201F18">10분</text>
+  </g>
+  <g text-anchor="middle" font-size="10" fill="currentColor" opacity="0.75">
+    <text x="207" y="79">쉬운 과제부터</text>
+    <text x="472" y="79">어려운 과제 + 문서</text>
+  </g>
+  <g text-anchor="middle" font-size="10" >
+    <text x="43" y="79" fill="#201F18">훑기</text>
+    <text x="614" y="79" fill="#201F18">검증</text>
+  </g>
+
+  <!-- 구간별 팁 -->
+  <g font-size="10.8" fill="currentColor">
+    <text x="30" y="116">▸ <tspan font-weight="700">훑기</tspan>: 12과제 전체를 먼저 읽고 난이도 표시 — 심리적 안정 + 우선순위 확보</text>
+    <text x="30" y="138">▸ <tspan font-weight="700">쉬운 과제</tspan>: 과제당 평균 10분 예산. 끝날 때마다 count()·DESCRIBE로 즉시 검증</text>
+    <text x="30" y="160">▸ <tspan font-weight="700">어려운 과제</tspan>: 한 과제에 15분 이상 매몰 금지 — 문서(clickhouse.com) 검색 후 안 되면 다음으로</text>
+    <text x="30" y="182">▸ <tspan font-weight="700">검증</tspan>: 뮤테이션·MATERIALIZE에 mutations_sync=1 확인, 빠뜨린 과제 최종 점검</text>
+  </g>
+</svg>

@@ -67,6 +67,10 @@ SELECT
 
 ### 시간 버킷 만들기 (GROUP BY의 단짝 — "시간 단위 집계" 시험 문형)
 
+"시간대별 집계"는 결국 **제각각인 초 단위 시각을 뭉개서 같은 그룹 키로 만드는 것**이다:
+
+![toStartOfHour가 흩어진 타임스탬프를 시간대 시작 시각으로 변환하면, 같은 시간대의 행들이 같은 값을 갖게 되어 GROUP BY로 묶인다](../docs/assets/diagrams/time-buckets.svg)
+
 ```sql
 SELECT toStartOfHour(ts), count() FROM events GROUP BY 1;   -- 시간별
 -- 계열: toStartOfMinute / Day / Week / Month / Quarter / Year
@@ -183,3 +187,37 @@ SELECT version(), hostName();
 1. 공식 문서 검색창에 **하고 싶은 일의 영어 키워드** 입력 (예: "split string")
 2. [SQL Reference → Functions](https://clickhouse.com/docs/sql-reference/functions) 카테고리에서 훑기
 3. `system.functions` 테이블 검색: `SELECT name FROM system.functions WHERE name ILIKE '%split%'`
+
+## 이해도 체크
+
+```quiz
+Q: 이벤트를 15분 단위로 묶어 집계하려면?
+1) toStartOfHour(ts) / 4
+2) toStartOfInterval(ts, INTERVAL 15 MINUTE) *
+3) round(ts, 15)
+E: 임의 간격 버킷은 toStartOfInterval이다. 시간/일/월은 toStartOfHour/Day/Month 계열 (10.2절).
+```
+
+```quiz
+Q: Apache 로그 형식 '16/Aug/2026:14:30:00'을 파싱하는 올바른 방법은?
+1) parseDateTimeBestEffort('16/Aug/2026:14:30:00')
+2) parseDateTime('16/Aug/2026:14:30:00', '%d/%b/%Y:%H:%i:%s') *
+3) toDateTime('16/Aug/2026:14:30:00')
+E: BestEffort는 이 형식을 못 읽는다 (26.8 실측 — 연도 뒤 콜론에서 실패). 포맷을 아는 형식은 parseDateTime + 포맷 문자열이 정답 (10.2절).
+```
+
+```quiz
+Q: `SELECT [10, 20, 30][1]`의 결과는?
+1) 10 *
+2) 20
+3) 에러
+E: ClickHouse 배열 인덱스는 1부터 시작한다. [1] = 첫 원소 = 10 (10.4절).
+```
+
+```quiz
+Q: `dateDiff('month', '2021-12-29', '2022-01-01')`과 `age('month', ...)`의 결과는?
+1) 둘 다 0
+2) dateDiff = 1, age = 0 *
+3) 둘 다 1
+E: dateDiff는 "월 경계를 넘은 횟수"(12월→1월 = 1), age는 "완전히 채워진 개월 수"(3일뿐 = 0). 시험 함정 포인트 (10.2절).
+```

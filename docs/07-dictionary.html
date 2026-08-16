@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -484,8 +567,53 @@ figure.diagram figcaption {
 </blockquote>
 <h2 id="s1">7.1 왜 필요한가</h2>
 <p>분석 쿼리에는 "코드 → 이름" 변환이 끝없이 나온다 (국가코드→국가명, 상품ID→상품명). JOIN으로 풀 수도 있지만, ClickHouse에서 JOIN은 상대적으로 비싼 연산이다. Dictionary는 참조 데이터를 <strong>메모리에 올려두고 함수 호출 한 번으로</strong> 조회한다.</p>
-<pre class="code" data-lang="text"><code>JOIN 방식:   SELECT ... FROM events JOIN countries ON ...   (매 쿼리마다 해시 테이블 구축)
-Dictionary:  SELECT dictGet(&#x27;countries_dict&#x27;, &#x27;name&#x27;, code) (메모리 룩업 — 상수 시간)</code></pre>
+<figure class="diagram">
+<svg viewBox="0 0 680 250" role="img" aria-label="JOIN은 쿼리마다 참조 테이블을 읽어 해시 테이블을 새로 만들지만, Dictionary는 메모리에 이미 올라가 있어 dictGet 함수 호출 한 번으로 즉시 조회한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-dj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arr-dj-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="170" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">JOIN 방식 — 쿼리마다 준비 작업</text>
+  <text x="510" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">Dictionary 방식 — 미리 올려두고 조회만</text>
+
+  <!-- JOIN 쪽 -->
+  <rect x="40" y="44" width="120" height="40" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="100" y="61" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">쿼리 시작</text>
+  <text x="100" y="76" text-anchor="middle" fill="currentColor" font-size="10" opacity="0.7">SELECT … JOIN …</text>
+
+  <rect x="40" y="108" width="120" height="46" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="100" y="126" text-anchor="middle" fill="currentColor" font-size="10.5">① 참조 테이블 읽기</text>
+  <text x="100" y="142" text-anchor="middle" fill="currentColor" font-size="10.5">② 해시 테이블 구축</text>
+  <line x1="100" y1="84" x2="100" y2="102" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-dj)"/>
+  <text x="112" y="98" font-size="9.5" fill="currentColor" opacity="0.6">매번 반복!</text>
+
+  <rect x="40" y="176" width="120" height="40" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="100" y="200" text-anchor="middle" fill="currentColor" font-size="10.5">③ 행마다 대조·결합</text>
+  <line x1="100" y1="154" x2="100" y2="170" stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-dj)"/>
+
+  <text x="240" y="130" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.75">공식 실측</text>
+  <text x="240" y="146" text-anchor="middle" font-size="11" fill="currentColor" font-weight="700">1.28초</text>
+
+  <!-- Dictionary 쪽 -->
+  <rect x="390" y="44" width="240" height="52" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="510" y="64" text-anchor="middle" fill="#201F18" font-weight="700">Dictionary (메모리 상주)</text>
+  <text x="510" y="82" text-anchor="middle" fill="#201F18" font-size="10">서버가 미리 로드 + LIFETIME 주기로 자동 갱신</text>
+
+  <rect x="390" y="140" width="240" height="44" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="510" y="158" text-anchor="middle" fill="currentColor" font-family="Menlo, monospace" font-size="11" font-weight="700">dictGet('d', 'name', key)</text>
+  <text x="510" y="175" text-anchor="middle" fill="currentColor" font-size="10" opacity="0.7">행마다 메모리 룩업 한 번 — 준비 작업 없음</text>
+  <line x1="510" y1="140" x2="510" y2="100" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-dj-acc)"/>
+
+  <text x="510" y="212" text-anchor="middle" font-size="11" fill="#D99E00" font-weight="700">같은 작업 0.55초 — 2.3배</text>
+
+  <text x="340" y="240" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="11">반복되는 "코드 → 이름" 보강은 Dictionary가 정답. 단, 부등호 매칭·대형×대형 결합은 여전히 JOIN의 영역이다.</text>
+</svg>
+<figcaption>JOIN은 쿼리마다 참조 테이블을 읽어 해시 테이블을 새로 만들지만, Dictionary는 메모리에 상주해 있어 dictGet 한 번으로 끝난다 — 공식 실측 1.28초 vs 0.55초</figcaption></figure>
 <h2 id="s2">7.2 만들기 — CREATE DICTIONARY (26.8 검증)</h2>
 <pre class="code" data-lang="sql"><code>-- 원천 테이블 (이미 있다고 가정)
 CREATE TABLE countries_src (
@@ -576,6 +704,43 @@ SYSTEM RELOAD DICTIONARY countries_dict;</code></pre>
 <p><code>user_files</code> 디렉토리 안 파일만 허용된다.</p>
 </blockquote>
 <p>시험 팁: 문제에 "dictionary를 만들어 조회하라"가 명시되면 위 7.2 문형을 그대로 쓰면 된다. 은근한 함정은 <strong>키 타입과 LAYOUT 불일치</strong> (String 키 + HASHED → 에러 → COMPLEX_KEY_HASHED로 교체)다.</p>
+<h2 id="s7">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>키가 String인 Dictionary에 맞는 LAYOUT은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">FLAT()</button>
+<button type="button" class="opt" data-correct="0">HASHED()</button>
+<button type="button" class="opt" data-correct="1">COMPLEX_KEY_HASHED()</button>
+</div>
+<div class="quiz-exp">💡 FLAT/HASHED는 UInt64 키 전용이다. 문자열·복합 키는 COMPLEX_KEY_ 계열 — 키 타입과 LAYOUT이 안 맞으면 생성 시 에러가 난다 (7.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span><code>LIFETIME(0)</code>의 의미는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">0초마다 갱신 (실시간)</button>
+<button type="button" class="opt" data-correct="1">자동 갱신 안 함</button>
+<button type="button" class="opt" data-correct="0">0초 후 사전 삭제</button>
+</div>
+<div class="quiz-exp">💡 0은 "갱신 끔"이다. <code>LIFETIME(MIN 0 MAX 300)</code>은 반대로 0~300초 사이 무작위 시점마다 갱신한다 — 헷갈리기 쉬운 지점 (7.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span>dictGet의 올바른 인자 순서는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">dictGet(키, 속성, 사전이름)</button>
+<button type="button" class="opt" data-correct="1">dictGet('사전이름', '속성이름', 키)</button>
+<button type="button" class="opt" data-correct="0">dictGet('속성이름', '사전이름', 키)</button>
+</div>
+<div class="quiz-exp">💡 사전 → 속성 → 키 순서다. 키가 없을 때 기본값을 원하면 dictGetOrDefault('d', 'attr', key, '기본값') (7.3절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>"환율처럼 날짜 구간별로 유효한 값"을 조회하려면?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">LAYOUT(FLAT()) + dictGet 3인자</button>
+<button type="button" class="opt" data-correct="1">LAYOUT(RANGE_HASHED()) + RANGE(MIN...MAX...) + 시점 인자 추가</button>
+<button type="button" class="opt" data-correct="0">Dictionary로는 불가능</button>
+</div>
+<div class="quiz-exp">💡 RANGE_HASHED는 RANGE 절로 유효 구간을 선언하고, dictGet에 4번째 인자로 시점을 넘긴다 (7.2절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="06-table-design.html"><span class="pn-label">← 이전</span><span class="pn-title">6장 · 테이블 설계</span></a><a class="pn next" href="08-inserting-data.html"><span class="pn-label">다음 →</span><span class="pn-title">8장 · 데이터 삽입</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -586,5 +751,43 @@ SYSTEM RELOAD DICTIONARY countries_dict;</code></pre>
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

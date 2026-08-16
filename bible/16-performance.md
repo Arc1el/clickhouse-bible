@@ -176,6 +176,8 @@ SELECT getSetting('max_threads');
 
 느린 쿼리를 만나면 이 순서로 점검한다:
 
+![최적화 진단 흐름 — EXPLAIN indexes=1의 granule 비율이 나쁘면 "읽는 양"(키 재설계·projection·skip index)을, 좋은데도 느리면 "계산량"(컬럼 축소·MV·Dictionary)을 공략한다](../docs/assets/diagrams/perf-flow.svg)
+
 1. **ORDER BY 키로 필터하고 있는가?** → `EXPLAIN indexes=1`에서 Granules 비율 확인.
    아니라면 쿼리를 키에 맞추거나, 키를 재설계하거나, projection(13장)
 2. **필요한 컬럼만 SELECT하는가?** `SELECT *`는 컬럼 지향의 이점을 버리는 행위
@@ -208,3 +210,37 @@ SELECT count() FROM logs WHERE level = 'ERROR' SETTINGS use_skip_indexes = 1;
 
 시험에서도 과제를 풀고 나서 `EXPLAIN indexes = 1`로 **의도한 인덱스/projection이
 실제로 쓰이는지 확인**하는 습관이 점수를 지킨다.
+
+## 이해도 체크
+
+```quiz
+Q: `EXPLAIN indexes = 1` 출력에서 최적화 판단의 핵심 지표는?
+1) 쿼리 길이
+2) Granules: 읽은수/전체수 비율 *
+3) Keys 목록의 개수
+E: 이 비율이 인덱스가 얼마나 건너뛰었는지를 보여준다. 거의 같으면 풀스캔 — 읽는 양을 줄이는 도구(키·projection·skip index)를 검토한다 (16.2절).
+```
+
+```quiz
+Q: EXPLAIN ANALYZE가 일반 EXPLAIN과 다른 점은?
+1) 더 짧게 출력한다
+2) 쿼리를 실제로 실행해 단계별 시간·병렬도 실측치를 붙인다 *
+3) 실행 계획을 수정해 준다
+E: 26.7+ 신기능. parallelism 0.9/12처럼 낮은 값이 보이는 단계가 직렬 병목이다 (16.2절).
+```
+
+```quiz
+Q: 방금 실행한 쿼리가 system.query_log에 안 보인다. 첫 번째로 할 일은?
+1) 서버 재시작
+2) SYSTEM FLUSH LOGS 실행 *
+3) 쿼리 재실행
+E: query_log는 버퍼링된다. 플러시 후에는 is_initial_query = 1 조건도 함께 (서브쿼리 행 제외) — 공식 권장 상시 조건이다 (16.3절).
+```
+
+```quiz
+Q: 두 가지 최적화의 효과를 비교 측정하는 올바른 방법은?
+1) 여러 번 실행해 warm 캐시 상태로 평균
+2) 캐시를 끄고(enable_filesystem_cache=0 등), 최적화를 한 번에 하나씩 적용 *
+3) 프로덕션에서 바로 A/B 테스트
+E: 반복 실행은 캐시 상태를 재는 것이다. 공식 권고는 캐시를 실제로 끄고, 변경을 하나씩 적용해 효과를 분리하는 것 (16.6절).
+```

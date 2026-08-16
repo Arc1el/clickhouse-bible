@@ -128,6 +128,8 @@ SELECT region, sum(amount) FROM sales GROUP BY region WITH TOTALS;  -- 총계를
 GROUP BY는 행을 요약해 **줄이지만**, 윈도우 함수는 **행을 그대로 두고**
 옆에 집계 결과를 붙인다.
 
+![GROUP BY는 4행을 2행으로 줄이지만(요약), 윈도우 함수는 4행을 유지한 채 그룹합 컬럼을 옆에 붙인다](../docs/assets/diagrams/groupby-vs-window.svg)
+
 ```sql
 집계함수/순위함수 OVER (
     PARTITION BY 그룹기준     -- 생략 시 전체가 한 그룹
@@ -195,3 +197,45 @@ WINDOW w AS (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWI
 | "각 주문에 그 국가의 매출 비중을 붙여라" (행 유지) | 윈도우 |
 | "누적/이동/전일 대비" | 윈도우 |
 | "그룹별 상위 N행" | `LIMIT n BY` (9장) 또는 row_number 필터 |
+
+## 이해도 체크
+
+```quiz
+Q: "정확한 고유 사용자 수"를 요구하는 과제의 정답 함수는?
+1) uniq(user_id)
+2) uniqExact(user_id) *
+3) count(user_id)
+E: uniq는 근사치다 (실측: 10만을 100,315로). "정확한(exact)"이 명시되면 uniqExact 또는 count(DISTINCT) (11.2절).
+```
+
+```quiz
+Q: 중위값(p50)을 구하는 올바른 문법은?
+1) quantile(duration_ms, 0.5)
+2) quantile(0.5)(duration_ms) *
+3) median(0.5, duration_ms)
+E: 파라미터형 함수는 괄호가 두 쌍이다 — 첫 괄호는 레벨, 둘째가 컬럼. median(duration_ms)도 동일 (11.3절).
+```
+
+```quiz
+Q: `argMax(plan, updated_at)`의 의미는?
+1) plan의 최댓값
+2) updated_at이 최대인 행의 plan 값 *
+3) plan과 updated_at 중 큰 것
+E: "B가 최대일 때의 A" — 최신값 조회의 표준 도구이자 ReplacingMergeTree 조회 패턴의 핵심 (11.4절).
+```
+
+```quiz
+Q: 한 번의 스캔으로 view 수와 purchase 수를 나란히 세려면?
+1) 쿼리를 두 번 실행
+2) countIf(type = 'view'), countIf(type = 'purchase') *
+3) count(view), count(purchase)
+E: -If combinator가 조건부 집계를 만든다. WHERE로 나누면 스캔이 두 번 — countIf는 한 번이다 (11.6절).
+```
+
+```quiz
+Q: `sum(sales) OVER (ORDER BY day)`가 자동으로 "누적합"이 되는 이유는?
+1) sum은 원래 누적 함수라서
+2) ORDER BY가 있으면 기본 프레임이 "처음~현재 행"이라서 *
+3) OVER가 정렬을 반복하기 때문
+E: 기본 프레임 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW 덕분이다. ORDER BY가 없으면 파티션 전체가 프레임 (11.8절).
+```

@@ -51,6 +51,8 @@ INNER JOIN users AS u ON o.user_id = u.id;
 
 "거래 시점 직전의 호가를 붙여라" 같은 비등가 시간 매칭:
 
+![ASOF JOIN은 각 거래에서 시간을 거슬러 올라가 가장 가까운 "이전" 호가를 짝지어 준다 — 정확히 같은 시각이 없어도 매칭된다](../docs/assets/diagrams/asof-join.svg)
+
 ```sql
 SELECT tr.sym, tr.t, tr.price, q.bid
 FROM trades tr
@@ -175,4 +177,46 @@ SELECT
 FROM product_sales
 ORDER BY country, revenue DESC
 LIMIT 3 BY country;
+```
+
+## 이해도 체크
+
+```quiz
+Q: "주문한 적 없는 사용자"처럼 짝이 "없는" 왼쪽 행만 남기는 JOIN은?
+1) LEFT SEMI JOIN
+2) LEFT ANTI JOIN *
+3) CROSS JOIN
+E: ANTI는 매칭 실패한 행만, SEMI는 매칭 성공한 왼쪽 행만 남긴다 (9.2절).
+```
+
+```quiz
+Q: LEFT JOIN에서 짝이 없는 오른쪽 컬럼에 기본적으로 들어가는 값은?
+1) NULL
+2) 타입 기본값 (0, 빈 문자열) *
+3) 에러가 난다
+E: ClickHouse의 기본 동작은 NULL이 아니라 타입 기본값이다. 표준 SQL처럼 NULL을 원하면 `SETTINGS join_use_nulls = 1` (9.2절).
+```
+
+```quiz
+Q: 무거운 집계를 CTE(WITH)로 빼고 두 번 참조하면?
+1) 한 번만 실행되고 결과가 재사용된다
+2) 참조할 때마다 다시 실행된다 — 두 번 돈다 *
+3) 문법 오류가 난다
+E: ClickHouse CTE는 캐싱하지 않는다 (26.8 실측). 한 번만 실행하려면 `WITH cte AS MATERIALIZED (...)` + enable_materialized_cte (9.1절).
+```
+
+```quiz
+Q: "지역마다 매출 상위 2개 상품"을 뽑는 ClickHouse 고유 문법은?
+1) TOP 2 PER region
+2) ORDER BY region, amount DESC LIMIT 2 BY region *
+3) GROUP BY region LIMIT 2
+E: LIMIT n BY 그룹키 — 그룹마다 상위 n행을 남긴다. 윈도우 함수 row_number보다 간결한 시험 단골 (9.4절).
+```
+
+```quiz
+Q: ASOF JOIN의 조건 구성 규칙은?
+1) 부등호 조건만 여러 개
+2) 등가 조건 1개 이상 + 부등호(시간) 조건 1개 *
+3) 조건 없이 자동 매칭
+E: 심볼 같은 등가 키로 짝 후보를 정하고, 부등호 조건으로 "가장 가까운 이전" 시점을 고른다 (9.2절).
 ```

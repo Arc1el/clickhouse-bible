@@ -232,3 +232,45 @@ FROM s3('https://bucket.s3.amazonaws.com/sales/*.parquet', NOSIGN);
 -- ④ 검증 습관
 SELECT count(), min(sale_date), max(sale_date) FROM sales;
 ```
+
+## 이해도 체크
+
+```quiz
+Q: 1행이 헤더인 CSV 파일을 읽을 때 올바른 포맷은?
+1) CSV
+2) CSVWithNames *
+3) CSVHeader
+E: CSV 포맷은 헤더가 없다고 가정한다. 헤더가 있으면 CSVWithNames — 실무 CSV의 대부분이 이쪽이다 (8.2절).
+```
+
+```quiz
+Q: "삽입하면서 컬럼 이름과 타입을 바꿔라"라는 과제의 표준 패턴은?
+1) ALTER TABLE로 나중에 수정
+2) INSERT INTO 대상 SELECT 변환식 FROM file(...) *
+3) 파일을 미리 엑셀로 수정
+E: 변환은 전부 SELECT 절에서 한다 — upper(name), price/1300, parseDateTimeBestEffort(ts) 등. 시험 영역 2의 핵심 문형이다 (8.5절).
+```
+
+```quiz
+Q: 인증 없이 공개 S3 버킷을 읽는 문법은?
+1) s3(url, 'anonymous')
+2) s3(url, NOSIGN) *
+3) s3(url) — 인증 생략하면 자동
+E: NOSIGN 키워드가 "서명 없이(익명) 접근"이다. 비공개 버킷은 s3(url, KEY, SECRET, 포맷) (8.3절).
+```
+
+```quiz
+Q: async_insert에 대한 올바른 설명은?
+1) 모든 INSERT를 빠르게 해준다
+2) 소량 INSERT를 서버가 모아 배치로 만들어 주지만, INSERT...SELECT에는 적용되지 않는다 *
+3) 데이터 유실을 완전히 막아준다
+E: 파일·테이블 적재(INSERT SELECT)는 항상 동기다. async_insert는 배치를 만들 수 없는 소량 빈번 삽입용이다 (8.1절).
+```
+
+```quiz
+Q: CSV 스키마 추론(DESCRIBE file) 결과를 테이블 설계에 그대로 쓰면 안 되는 이유는?
+1) 추론이 자주 틀려서
+2) 텍스트 포맷 추론은 전부 Nullable + 큰 타입(Int64)으로 나오기 때문 *
+3) DESCRIBE는 유료 기능이라서
+E: 추론은 안전 우선이라 느슨하다. "효율적 타입" 채점 기준에 맞추려면 4장 원칙대로 직접 선언해야 한다 (8.4절).
+```

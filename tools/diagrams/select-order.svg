@@ -1,0 +1,54 @@
+<svg viewBox="0 0 680 300" role="img" aria-label="SELECT 문은 위에서부터 쓰지만 실행은 FROM부터 시작해 WHERE, GROUP BY, HAVING, SELECT, ORDER BY, LIMIT 순서로 진행된다. WHERE는 집계 전 행을 거르고 HAVING은 집계 후 결과를 거른다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-sel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="150" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">쓰는 순서 (문법)</text>
+  <text x="480" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">실행되는 순서 (엔진의 사고 과정)</text>
+
+  <!-- 쓰는 순서 -->
+  <g font-family="Menlo, monospace" font-size="12" fill="currentColor">
+    <text x="60" y="60">SELECT   …</text>
+    <text x="60" y="92">FROM     …</text>
+    <text x="60" y="124">WHERE    …</text>
+    <text x="60" y="156">GROUP BY …</text>
+    <text x="60" y="188">HAVING   …</text>
+    <text x="60" y="220">ORDER BY …</text>
+    <text x="60" y="252">LIMIT    …</text>
+  </g>
+  <!-- 실행 순번 배지 -->
+  <g font-size="10.5" font-weight="700" text-anchor="middle">
+    <circle cx="40" cy="56"  r="10" fill="#F2C230"/><text x="40" y="60"  fill="#201F18">5</text>
+    <circle cx="40" cy="88"  r="10" fill="#F2C230"/><text x="40" y="92"  fill="#201F18">1</text>
+    <circle cx="40" cy="120" r="10" fill="#F2C230"/><text x="40" y="124" fill="#201F18">2</text>
+    <circle cx="40" cy="152" r="10" fill="#F2C230"/><text x="40" y="156" fill="#201F18">3</text>
+    <circle cx="40" cy="184" r="10" fill="#F2C230"/><text x="40" y="188" fill="#201F18">4</text>
+    <circle cx="40" cy="216" r="10" fill="#F2C230"/><text x="40" y="220" fill="#201F18">6</text>
+    <circle cx="40" cy="248" r="10" fill="#F2C230"/><text x="40" y="252" fill="#201F18">7</text>
+  </g>
+
+  <!-- 실행 파이프라인 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="330" y="40"  width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="76"  width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="112" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="148" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="184" width="300" height="30" rx="6" fill="#F2C230"/>
+    <rect x="330" y="220" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="330" y="256" width="300" height="30" rx="6" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-size="11" fill="currentColor">
+    <text x="342" y="59">① FROM — 어느 테이블에서</text>
+    <text x="342" y="95">② WHERE — <tspan font-weight="700">집계 전</tspan> 행을 거른다</text>
+    <text x="342" y="131">③ GROUP BY — 남은 행을 묶는다</text>
+    <text x="342" y="167">④ HAVING — <tspan font-weight="700">집계 후</tspan> 결과를 거른다</text>
+    <text x="342" y="239">⑥ ORDER BY — 결과를 정렬</text>
+    <text x="342" y="275">⑦ LIMIT — 위에서 N개만</text>
+  </g>
+  <text x="342" y="203" font-size="11" fill="#201F18">⑤ SELECT — 이제야 컬럼을 고르고 계산</text>
+
+  <text x="150" y="282" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="10.5">별칭(AS)을 WHERE에서 못 쓰는 표준 SQL의 이유가</text>
+  <text x="150" y="297" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="10.5">이 순서다 (ClickHouse는 예외적으로 허용)</text>
+</svg>

@@ -13,6 +13,8 @@ ClickHouse의 남다른 점: **파일 하나에 서버·클라이언트·로컬 
 | `./clickhouse client` | 실행 중인 서버에 접속하는 클라이언트 |
 | `./clickhouse local` | **서버 없이** 즉석 SQL 실행 (학습 최적) |
 
+![파일 하나가 세 가지 모드로 실행된다 — local은 즉석 실행, server는 상시 대기, client와 HTTP는 각자의 포트로 서버에 접속한다](../docs/assets/diagrams/binary-modes.svg)
+
 ## 2.2 설치 방법별 정리
 
 ### macOS / Linux — 공식 스크립트 (가장 간단)
@@ -191,3 +193,37 @@ SELECT * FROM check;
 
 > 💡 이 책의 예제는 대부분 `clickhouse local`로 충분하다. 예외는 17장(복제/클러스터)과
 > 12장의 Refreshable MV 일부(Atomic DB 필요 — 해당 장에 우회법 명시)뿐이다.
+
+## 이해도 체크
+
+```quiz
+Q: 서버 프로세스 없이 즉석에서 SQL을 실행하는 방법은?
+1) clickhouse server
+2) clickhouse local *
+3) clickhouse-keeper
+E: clickhouse local은 서버 없이 파일 분석·학습용 SQL을 즉석 실행한다. 상태를 유지하려면 --path를 지정한다 (2.3절).
+```
+
+```quiz
+Q: ClickHouse 서버의 HTTP 포트와 Native TCP 포트는?
+1) 80과 22
+2) 8123과 9000 *
+3) 3306과 5432
+E: 8123이 HTTP(REST·/play UI), 9000이 clickhouse-client가 쓰는 Native TCP다. 9004/9005는 MySQL/PostgreSQL 호환 포트 (2.4절).
+```
+
+```quiz
+Q: 패키지 설치 서버에서 설정을 고칠 때 권장되는 위치는?
+1) config.xml을 직접 수정
+2) config.d/ 디렉토리에 덮어쓰기 조각 파일 추가 *
+3) 환경 변수로만 가능
+E: 원본(config.xml/users.xml)은 보존하고 config.d/·users.d/에 조각 파일을 두는 것이 표준이다 — 업그레이드 시 충돌을 피한다 (2.5절).
+```
+
+```quiz
+Q: clickhouse local 실습에서 만든 테이블이 다음 실행 때 사라졌다. 원인은?
+1) 버그다
+2) --path 없이 실행해 임시 디렉토리를 썼기 때문 *
+3) MergeTree는 원래 휘발성이다
+E: local 모드 기본값은 임시 상태다. `./clickhouse local --path ./practice`처럼 데이터 디렉토리를 지정해야 유지된다 (2.3절).
+```

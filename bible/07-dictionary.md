@@ -9,10 +9,7 @@
 JOIN으로 풀 수도 있지만, ClickHouse에서 JOIN은 상대적으로 비싼 연산이다.
 Dictionary는 참조 데이터를 **메모리에 올려두고 함수 호출 한 번으로** 조회한다.
 
-```text
-JOIN 방식:   SELECT ... FROM events JOIN countries ON ...   (매 쿼리마다 해시 테이블 구축)
-Dictionary:  SELECT dictGet('countries_dict', 'name', code) (메모리 룩업 — 상수 시간)
-```
+![JOIN은 쿼리마다 참조 테이블을 읽어 해시 테이블을 새로 만들지만, Dictionary는 메모리에 상주해 있어 dictGet 한 번으로 끝난다 — 공식 실측 1.28초 vs 0.55초](../docs/assets/diagrams/dict-vs-join.svg)
 
 ## 7.2 만들기 — CREATE DICTIONARY (26.8 검증)
 
@@ -151,3 +148,37 @@ SYSTEM RELOAD DICTIONARY countries_dict;
 시험 팁: 문제에 "dictionary를 만들어 조회하라"가 명시되면 위 7.2 문형을 그대로 쓰면
 된다. 은근한 함정은 **키 타입과 LAYOUT 불일치** (String 키 + HASHED → 에러 →
 COMPLEX_KEY_HASHED로 교체)다.
+
+## 이해도 체크
+
+```quiz
+Q: 키가 String인 Dictionary에 맞는 LAYOUT은?
+1) FLAT()
+2) HASHED()
+3) COMPLEX_KEY_HASHED() *
+E: FLAT/HASHED는 UInt64 키 전용이다. 문자열·복합 키는 COMPLEX_KEY_ 계열 — 키 타입과 LAYOUT이 안 맞으면 생성 시 에러가 난다 (7.2절).
+```
+
+```quiz
+Q: `LIFETIME(0)`의 의미는?
+1) 0초마다 갱신 (실시간)
+2) 자동 갱신 안 함 *
+3) 0초 후 사전 삭제
+E: 0은 "갱신 끔"이다. `LIFETIME(MIN 0 MAX 300)`은 반대로 0~300초 사이 무작위 시점마다 갱신한다 — 헷갈리기 쉬운 지점 (7.2절).
+```
+
+```quiz
+Q: dictGet의 올바른 인자 순서는?
+1) dictGet(키, 속성, 사전이름)
+2) dictGet('사전이름', '속성이름', 키) *
+3) dictGet('속성이름', '사전이름', 키)
+E: 사전 → 속성 → 키 순서다. 키가 없을 때 기본값을 원하면 dictGetOrDefault('d', 'attr', key, '기본값') (7.3절).
+```
+
+```quiz
+Q: "환율처럼 날짜 구간별로 유효한 값"을 조회하려면?
+1) LAYOUT(FLAT()) + dictGet 3인자
+2) LAYOUT(RANGE_HASHED()) + RANGE(MIN...MAX...) + 시점 인자 추가 *
+3) Dictionary로는 불가능
+E: RANGE_HASHED는 RANGE 절로 유효 구간을 선언하고, dictGet에 4번째 인자로 시점을 넘긴다 (7.2절).
+```

@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -555,6 +638,73 @@ SELECT a, b, sum(x) FROM t GROUP BY a, b WITH CUBE;    -- 모든 조합의 소�
 SELECT region, sum(amount) FROM sales GROUP BY region WITH TOTALS;  -- 총계를 별도 블록으로</code></pre>
 <h2 id="s8">11.8 윈도우 함수 — 행을 유지하며 집계</h2>
 <p>GROUP BY는 행을 요약해 <strong>줄이지만</strong>, 윈도우 함수는 <strong>행을 그대로 두고</strong> 옆에 집계 결과를 붙인다.</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 270" role="img" aria-label="GROUP BY는 여러 행을 요약값 하나로 줄이지만, 윈도우 함수는 행을 그대로 유지한 채 옆에 집계 결과 컬럼을 붙인다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-gw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 원본 테이블 -->
+  <text x="90" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">원본 4행</text>
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="20" y="36"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="60"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="84"  width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="20" y="108" width="140" height="24" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="30" y="52">KR  A  100</text>
+    <text x="30" y="76">KR  B  300</text>
+    <text x="30" y="100">US  A  500</text>
+    <text x="30" y="124">US  B  100</text>
+  </g>
+
+  <!-- GROUP BY 경로 -->
+  <line x1="160" y1="60" x2="240" y2="60" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-gw)"/>
+  <text x="200" y="50" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">GROUP BY 국가</text>
+  <text x="352" y="26" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">행이 줄어든다 (요약)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="248" y="40" width="200" height="24" fill="#F2C230"/>
+    <rect x="248" y="64" width="200" height="24" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="#201F18">
+    <text x="258" y="56">KR  sum=400</text>
+    <text x="258" y="80">US  sum=600</text>
+  </g>
+  <text x="352" y="106" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.65">4행 → 2행. 개별 행 정보는 사라짐</text>
+
+  <!-- 윈도우 경로 -->
+  <line x1="160" y1="112" x2="240" y2="150" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-gw)"/>
+  <text x="176" y="140" font-size="10.5" fill="#D99E00" font-weight="700">sum() OVER</text>
+  <text x="176" y="154" font-size="10.5" fill="#D99E00" font-weight="700">(PARTITION BY 국가)</text>
+  <text x="420" y="140" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">행이 유지된다 (옆에 붙임)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="248" y="150" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="174" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="198" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="248" y="222" width="270" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="428" y="150" width="90" height="96" fill="#F2C230" fill-opacity="0.85"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="258" y="166">KR  A  100</text>
+    <text x="258" y="190">KR  B  300</text>
+    <text x="258" y="214">US  A  500</text>
+    <text x="258" y="238">US  B  100</text>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="#201F18" font-weight="700">
+    <text x="440" y="166">그룹합 400</text>
+    <text x="440" y="190">그룹합 400</text>
+    <text x="440" y="214">그룹합 600</text>
+    <text x="440" y="238">그룹합 600</text>
+  </g>
+  <text x="560" y="200" font-size="10" fill="currentColor" opacity="0.65">새 컬럼이</text>
+  <text x="560" y="214" font-size="10" fill="currentColor" opacity="0.65">붙을 뿐</text>
+
+  <text x="340" y="264" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">"매출 비중(행 값 ÷ 그룹합)"처럼 개별 행과 집계값이 동시에 필요하면 윈도우 — 요약만 필요하면 GROUP BY.</text>
+</svg>
+<figcaption>GROUP BY는 4행을 2행으로 줄이지만(요약), 윈도우 함수는 4행을 유지한 채 그룹합 컬럼을 옆에 붙인다</figcaption></figure>
 <pre class="code" data-lang="sql"><code>집계함수/순위함수 OVER (
     PARTITION BY 그룹기준     -- 생략 시 전체가 한 그룹
     ORDER BY 정렬기준
@@ -592,6 +742,52 @@ WINDOW w AS (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWI
 <p>(<code>lag</code>/<code>lead</code>도 정식 지원되며 이쪽은 프레임을 항상 무시한다 — 프레임 지정 없이 바로 쓸 수 있다. <code>lagInFrame</code>/<code>leadInFrame</code>은 프레임을 <strong>존중</strong>하므로 lag처럼 쓰려면 위처럼 UNBOUNDED 프레임을 명시해야 한다. <code>WINDOW 절</code>로 공통 윈도우에 이름을 붙이면 깔끔하다.)</p>
 <h2 id="s12">11.9 GROUP BY vs 윈도우 — 선택 기준</h2>
 <div class="tablewrap"><table><thead><tr><th>질문</th><th>도구</th></tr></thead><tbody><tr><td>"국가별 매출 합계는?" (요약만 필요)</td><td>GROUP BY</td></tr><tr><td>"각 주문에 그 국가의 매출 비중을 붙여라" (행 유지)</td><td>윈도우</td></tr><tr><td>"누적/이동/전일 대비"</td><td>윈도우</td></tr><tr><td>"그룹별 상위 N행"</td><td><code>LIMIT n BY</code> (9장) 또는 row_number 필터</td></tr></tbody></table></div>
+<h2 id="s13">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span>"정확한 고유 사용자 수"를 요구하는 과제의 정답 함수는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">uniq(user_id)</button>
+<button type="button" class="opt" data-correct="1">uniqExact(user_id)</button>
+<button type="button" class="opt" data-correct="0">count(user_id)</button>
+</div>
+<div class="quiz-exp">💡 uniq는 근사치다 (실측: 10만을 100,315로). "정확한(exact)"이 명시되면 uniqExact 또는 count(DISTINCT) (11.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span>중위값(p50)을 구하는 올바른 문법은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">quantile(duration_ms, 0.5)</button>
+<button type="button" class="opt" data-correct="1">quantile(0.5)(duration_ms)</button>
+<button type="button" class="opt" data-correct="0">median(0.5, duration_ms)</button>
+</div>
+<div class="quiz-exp">💡 파라미터형 함수는 괄호가 두 쌍이다 — 첫 괄호는 레벨, 둘째가 컬럼. median(duration_ms)도 동일 (11.3절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span><code>argMax(plan, updated_at)</code>의 의미는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">plan의 최댓값</button>
+<button type="button" class="opt" data-correct="1">updated_at이 최대인 행의 plan 값</button>
+<button type="button" class="opt" data-correct="0">plan과 updated_at 중 큰 것</button>
+</div>
+<div class="quiz-exp">💡 "B가 최대일 때의 A" — 최신값 조회의 표준 도구이자 ReplacingMergeTree 조회 패턴의 핵심 (11.4절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>한 번의 스캔으로 view 수와 purchase 수를 나란히 세려면?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">쿼리를 두 번 실행</button>
+<button type="button" class="opt" data-correct="1">countIf(type = 'view'), countIf(type = 'purchase')</button>
+<button type="button" class="opt" data-correct="0">count(view), count(purchase)</button>
+</div>
+<div class="quiz-exp">💡 -If combinator가 조건부 집계를 만든다. WHERE로 나누면 스캔이 두 번 — countIf는 한 번이다 (11.6절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q5.</span><code>sum(sales) OVER (ORDER BY day)</code>가 자동으로 "누적합"이 되는 이유는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">sum은 원래 누적 함수라서</button>
+<button type="button" class="opt" data-correct="1">ORDER BY가 있으면 기본 프레임이 "처음~현재 행"이라서</button>
+<button type="button" class="opt" data-correct="0">OVER가 정렬을 반복하기 때문</button>
+</div>
+<div class="quiz-exp">💡 기본 프레임 RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW 덕분이다. ORDER BY가 없으면 파티션 전체가 프레임 (11.8절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="10-functions.html"><span class="pn-label">← 이전</span><span class="pn-title">10장 · 함수 레퍼런스 ①</span></a><a class="pn next" href="12-materialized-views.html"><span class="pn-label">다음 →</span><span class="pn-title">12장 · Materialized View</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -602,5 +798,43 @@ WINDOW w AS (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWI
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

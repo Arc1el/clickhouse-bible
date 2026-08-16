@@ -74,6 +74,11 @@ CollapsingMergeTree로 관리하라. 상태 변경(2개 15,000원 → 3개 22,00
 
 ## 해답
 
+채점을 시작하기 전에, 12과제가 만들어 가는 **전체 시스템의 조감도**를 보자.
+각 과제가 어디에 붙는 부품인지 보이면 해답이 훨씬 잘 읽힌다:
+
+![모의고사 12과제를 완주하면 완성되는 시스템 — 과제들이 서로의 결과물 위에 쌓인다](../docs/assets/diagrams/mock-architecture.svg)
+
 ### 과제 1 — 데이터베이스와 테이블
 
 ```sql
@@ -387,3 +392,29 @@ HAVING sum(sign) > 0;
 
 실전 팁: 시험도 이 모의고사처럼 **앞 과제의 결과물(테이블) 위에 뒤 과제가 쌓이는**
 구조일 수 있다. 과제 순서대로 차분히, 각 과제 후 `SELECT count()`로 검증하는 습관을 들일 것.
+
+## 이해도 체크 (모의고사 복기)
+
+```quiz
+Q: 과제 1에서 event_type·country 컬럼에 LowCardinality(String)을 쓴 이유는?
+1) 문자열이 길어서
+2) 고유값 종류가 적어 사전 인코딩 효과가 크기 때문 *
+3) NULL을 허용하려고
+E: "효율적인 타입 선택"의 대표 채점 포인트다. 종류가 적은 문자열 = LowCardinality (과제 1 해설).
+```
+
+```quiz
+Q: 과제 10에서 lightweight DELETE가 거부된 원인은?
+1) 권한 부족
+2) 과제 8에서 만든 projection 때문 (lightweight_mutation_projection_mode 기본값 throw) *
+3) 문법 오류
+E: projection이 있는 테이블의 DELETE는 기본 거부된다. MODIFY SETTING 'rebuild' 또는 ALTER DELETE로 우회 (과제 10 해설).
+```
+
+```quiz
+Q: 과제 7의 daily_users에서 고유 사용자 수를 읽는 올바른 쿼리는?
+1) SELECT users FROM daily_users
+2) SELECT day, uniqMerge(users) FROM daily_users GROUP BY day *
+3) SELECT uniq(users) FROM daily_users
+E: uniqState로 저장한 상태는 uniqMerge + GROUP BY로 읽는다 (과제 7 해설, 12장).
+```

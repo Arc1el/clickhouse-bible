@@ -24,6 +24,10 @@
   --code-ink: #EDEADD;
   --code-label: #A29D87;
   --warn-bg: #FBF3DC;
+  --ok: #2E7D4F;
+  --ok-bg: #E7F3EB;
+  --bad: #B3402E;
+  --bad-bg: #F9E9E5;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -40,6 +44,10 @@
     --code-ink: #E4E1D2;
     --code-label: #7E795F;
     --warn-bg: #2A2617;
+    --ok: #6FBF8A;
+    --ok-bg: #1C2B20;
+    --bad: #E08A78;
+    --bad-bg: #2E1E1A;
   }
 }
 
@@ -282,7 +290,7 @@ pre.code {
   background: var(--code-bg);
   color: var(--code-ink);
   border-radius: 10px;
-  padding: 1rem 1.1rem;
+  padding: 2rem 1.1rem 1rem;
   overflow-x: auto;
   font-size: 0.82rem;
   line-height: 1.6;
@@ -292,13 +300,30 @@ pre.code code { background: none; border: 0; padding: 0; font-size: inherit; col
 pre.code::before {
   content: attr(data-lang);
   position: absolute;
-  top: 0.45rem;
-  right: 0.8rem;
+  top: 0.55rem;
+  left: 1.1rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--code-label);
 }
+.copybtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--code-label);
+  background: transparent;
+  border: 1px solid var(--code-label);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.copybtn:hover { opacity: 1; color: var(--code-ink); border-color: var(--code-ink); }
+.copybtn.done { color: #7FD49A; border-color: #7FD49A; opacity: 1; }
 
 .tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
 .chapter table {
@@ -356,6 +381,64 @@ figure.diagram figcaption {
   text-align: center;
   margin-top: 0.7rem;
   min-width: 560px;
+}
+
+/* ---- 퀴즈 ---- */
+.quiz {
+  margin: 1.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 1rem 1.2rem 1.1rem;
+}
+.quiz-q {
+  font-weight: 750;
+  margin: 0 0 0.7rem;
+}
+.quiz-q .qnum { color: var(--accent-ink); margin-right: 0.4rem; }
+.quiz-opts { display: flex; flex-direction: column; gap: 0.45rem; }
+.quiz .opt {
+  font-family: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+.quiz .opt:hover { border-color: var(--accent-ink); }
+.quiz.answered .opt { cursor: default; }
+.quiz.answered .opt:hover { border-color: var(--line); }
+.quiz.answered .opt.correct {
+  border-color: var(--ok);
+  background: var(--ok-bg);
+  font-weight: 700;
+}
+.quiz.answered .opt.correct::after { content: "  ✓ 정답"; color: var(--ok); font-size: 0.8rem; }
+.quiz.answered .opt.wrong {
+  border-color: var(--bad);
+  background: var(--bad-bg);
+}
+.quiz.answered .opt.wrong::after { content: "  ✗"; color: var(--bad); font-size: 0.8rem; }
+.quiz-exp {
+  display: none;
+  margin-top: 0.8rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.88rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.quiz.answered .quiz-exp { display: block; }
+.quiz .opt code, .quiz-q code, .quiz-exp code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.05em 0.3em;
+  font-size: 0.85em;
 }
 
 /* ---- 이전/다음 ---- */
@@ -589,6 +672,60 @@ SELECT getSetting(&#x27;max_threads&#x27;);</code></pre>
 <div class="tablewrap"><table><thead><tr><th>설정</th><th>의미</th></tr></thead><tbody><tr><td><code>max_threads</code></td><td>쿼리 병렬 스레드 수 (기본: 코어 수)</td></tr><tr><td><code>max_memory_usage</code></td><td>쿼리당 메모리 한도</td></tr><tr><td><code>max_execution_time</code></td><td>쿼리 시간 제한(초)</td></tr><tr><td><code>join_use_nulls</code></td><td>JOIN 미매칭을 기본값 대신 NULL로</td></tr><tr><td><code>mutations_sync</code></td><td>뮤테이션 완료 대기 (14장)</td></tr><tr><td><code>async_insert</code></td><td>비동기 삽입 (8장)</td></tr><tr><td><code>use_skip_indexes</code></td><td>skipping index 사용 여부 (비교 실험용)</td></tr><tr><td><code>force_optimize_projection</code></td><td>projection 강제 (검증용, 13장)</td></tr></tbody></table></div>
 <h2 id="s8">16.5 최적화 사고 순서 (공식 best practice 요약)</h2>
 <p>느린 쿼리를 만나면 이 순서로 점검한다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 330" role="img" aria-label="느린 쿼리 최적화 진단 순서. EXPLAIN indexes=1로 granule 비율을 보고, 나쁘면 ORDER BY 재설계나 projection, skip index를 검토한다. 비율이 좋은데도 느리면 SELECT 컬럼 축소, 반복 집계는 MV로 사전 계산한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arr-pf-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <rect x="270" y="14" width="140" height="34" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="340" y="36" text-anchor="middle" fill="currentColor" font-weight="700">느린 쿼리 발견</text>
+
+  <line x1="340" y1="48" x2="340" y2="68" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-pf-acc)"/>
+
+  <rect x="230" y="74" width="220" height="40" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="92" text-anchor="middle" fill="#201F18" font-weight="700" font-family="Menlo, monospace" font-size="11.5">EXPLAIN indexes = 1</text>
+  <text x="340" y="108" text-anchor="middle" fill="#201F18" font-size="10.5">Granules: 읽은수 / 전체수 확인</text>
+
+  <!-- 분기 -->
+  <g stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-pf)">
+    <line x1="252" y1="114" x2="160" y2="146"/>
+    <line x1="428" y1="114" x2="520" y2="146"/>
+  </g>
+  <text x="184" y="136" text-anchor="end" font-size="10.5" fill="currentColor" font-weight="700">비율 나쁨 (거의 전부 읽음)</text>
+  <text x="498" y="136" font-size="10.5" fill="currentColor" font-weight="700">비율 좋은데도 느림</text>
+
+  <!-- 왼쪽: 읽기 줄이기 -->
+  <rect x="36" y="152" width="250" height="120" rx="10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="161" y="172" text-anchor="middle" fill="currentColor" font-weight="700" font-size="11.5">읽는 양을 줄여라</text>
+  <g font-size="10.8" fill="currentColor">
+    <text x="52" y="194">① 쿼리가 ORDER BY 키로 필터하는가?</text>
+    <text x="66" y="210" opacity="0.75">아니면 쿼리 또는 키를 재설계 (6장)</text>
+    <text x="52" y="230">② 다른 정렬이 통째로 필요 → Projection</text>
+    <text x="52" y="248">③ 부분 가속 → set/minmax Skip Index</text>
+    <text x="66" y="264" opacity="0.75">(둘 다 13장 · MATERIALIZE 잊지 말 것)</text>
+  </g>
+
+  <!-- 오른쪽: 계산 줄이기 -->
+  <rect x="394" y="152" width="250" height="120" rx="10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="519" y="172" text-anchor="middle" fill="currentColor" font-weight="700" font-size="11.5">계산·전송을 줄여라</text>
+  <g font-size="10.8" fill="currentColor">
+    <text x="410" y="194">① SELECT * 금지 — 필요한 컬럼만 (1장)</text>
+    <text x="410" y="212">② 같은 집계 반복 → MV로 사전 계산 (12장)</text>
+    <text x="410" y="230">③ 문자열 → LowCardinality 검토 (4장)</text>
+    <text x="410" y="248">④ JOIN → Dictionary / 작은 쪽 오른쪽 (7·9장)</text>
+    <text x="410" y="264">⑤ 병목 단계 특정 → EXPLAIN ANALYZE</text>
+  </g>
+
+  <text x="340" y="298" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">순서가 중요하다: 최적화는 <tspan font-weight="700">한 번에 하나씩</tspan> 적용하고, 캐시를 끈 상태로 전후를 측정해 효과를 분리한다 (16.6절).</text>
+  <text x="340" y="316" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">대부분의 성능 문제는 왼쪽 상자(읽는 양)에서 끝난다 — ClickHouse 최적화의 제1원칙은 "덜 읽기"다.</text>
+</svg>
+<figcaption>최적화 진단 흐름 — EXPLAIN indexes=1의 granule 비율이 나쁘면 "읽는 양"(키 재설계·projection·skip index)을, 좋은데도 느리면 "계산량"(컬럼 축소·MV·Dictionary)을 공략한다</figcaption></figure>
 <ol>
 <li><strong>ORDER BY 키로 필터하고 있는가?</strong> → <code>EXPLAIN indexes=1</code>에서 Granules 비율 확인. 아니라면 쿼리를 키에 맞추거나, 키를 재설계하거나, projection(13장)</li>
 <li><strong>필요한 컬럼만 SELECT하는가?</strong> <code>SELECT *</code>는 컬럼 지향의 이점을 버리는 행위</li>
@@ -612,6 +749,43 @@ SELECT count() FROM big WHERE tag = &#x27;web&#x27; FORMAT Null;
 SELECT count() FROM logs WHERE level = &#x27;ERROR&#x27; SETTINGS use_skip_indexes = 0;
 SELECT count() FROM logs WHERE level = &#x27;ERROR&#x27; SETTINGS use_skip_indexes = 1;</code></pre>
 <p>시험에서도 과제를 풀고 나서 <code>EXPLAIN indexes = 1</code>로 <strong>의도한 인덱스/projection이 실제로 쓰이는지 확인</strong>하는 습관이 점수를 지킨다.</p>
+<h2 id="s10">이해도 체크</h2>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q1.</span><code>EXPLAIN indexes = 1</code> 출력에서 최적화 판단의 핵심 지표는?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">쿼리 길이</button>
+<button type="button" class="opt" data-correct="1">Granules: 읽은수/전체수 비율</button>
+<button type="button" class="opt" data-correct="0">Keys 목록의 개수</button>
+</div>
+<div class="quiz-exp">💡 이 비율이 인덱스가 얼마나 건너뛰었는지를 보여준다. 거의 같으면 풀스캔 — 읽는 양을 줄이는 도구(키·projection·skip index)를 검토한다 (16.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q2.</span>EXPLAIN ANALYZE가 일반 EXPLAIN과 다른 점은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">더 짧게 출력한다</button>
+<button type="button" class="opt" data-correct="1">쿼리를 실제로 실행해 단계별 시간·병렬도 실측치를 붙인다</button>
+<button type="button" class="opt" data-correct="0">실행 계획을 수정해 준다</button>
+</div>
+<div class="quiz-exp">💡 26.7+ 신기능. parallelism 0.9/12처럼 낮은 값이 보이는 단계가 직렬 병목이다 (16.2절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q3.</span>방금 실행한 쿼리가 system.query_log에 안 보인다. 첫 번째로 할 일은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">서버 재시작</button>
+<button type="button" class="opt" data-correct="1">SYSTEM FLUSH LOGS 실행</button>
+<button type="button" class="opt" data-correct="0">쿼리 재실행</button>
+</div>
+<div class="quiz-exp">💡 query_log는 버퍼링된다. 플러시 후에는 is_initial_query = 1 조건도 함께 (서브쿼리 행 제외) — 공식 권장 상시 조건이다 (16.3절).</div>
+</div>
+<div class="quiz">
+<p class="quiz-q"><span class="qnum">Q4.</span>두 가지 최적화의 효과를 비교 측정하는 올바른 방법은?</p>
+<div class="quiz-opts">
+<button type="button" class="opt" data-correct="0">여러 번 실행해 warm 캐시 상태로 평균</button>
+<button type="button" class="opt" data-correct="1">캐시를 끄고(enable_filesystem_cache=0 등), 최적화를 한 번에 하나씩 적용</button>
+<button type="button" class="opt" data-correct="0">프로덕션에서 바로 A/B 테스트</button>
+</div>
+<div class="quiz-exp">💡 반복 실행은 캐시 상태를 재는 것이다. 공식 권고는 캐시를 실제로 끄고, 변경을 하나씩 적용해 효과를 분리하는 것 (16.6절).</div>
+</div>
 </article>
 <nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="15-other-engines-kafka.html"><span class="pn-label">← 이전</span><span class="pn-title">15장 · 기타 테이블 엔진과 스트리밍 연동</span></a><a class="pn next" href="17-replication-scaling.html"><span class="pn-label">다음 →</span><span class="pn-title">17장 · 복제와 샤딩</span></a></nav>
       <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
@@ -622,5 +796,43 @@ SELECT count() FROM logs WHERE level = &#x27;ERROR&#x27; SETTINGS use_skip_index
     </div>
   </div>
 </div>
+
+<script>
+(function () {
+  // 코드 복사 버튼
+  document.querySelectorAll('pre.code').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'copybtn';
+    btn.type = 'button';
+    btn.textContent = '복사';
+    btn.setAttribute('aria-label', '코드 복사');
+    btn.addEventListener('click', function () {
+      var text = pre.querySelector('code').innerText;
+      navigator.clipboard.writeText(text).then(function () {
+        btn.textContent = '복사됨 ✓';
+        btn.classList.add('done');
+        setTimeout(function () {
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      });
+    });
+    pre.appendChild(btn);
+  });
+
+  // 퀴즈
+  document.querySelectorAll('.quiz .opt').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      var quiz = this.closest('.quiz');
+      if (quiz.classList.contains('answered')) return;
+      quiz.classList.add('answered');
+      quiz.querySelectorAll('.opt').forEach(function (o) {
+        if (o.dataset.correct === '1') o.classList.add('correct');
+      });
+      if (this.dataset.correct !== '1') this.classList.add('wrong');
+    });
+  });
+})();
+</script>
 </body>
 </html>

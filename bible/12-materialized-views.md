@@ -286,3 +286,45 @@ DROP TABLE purchases_mv;           -- MV 삭제 (TO 방식이면 대상 테이�
 5. SummingMergeTree 조회에서 GROUP BY 생략 — merge 전 중복 행이 그대로 보임
 6. MV SELECT에 JOIN — 오른쪽 테이블 변경이 반영 안 되는 걸 모르고 사용
 7. UNION ALL이 든 MV — 첫 번째 원본에만 트리거 (12.7)
+
+## 이해도 체크
+
+```quiz
+Q: MV를 만들기 "전"에 원본 테이블에 있던 데이터는?
+1) 자동으로 대상 테이블에 반영된다
+2) 반영되지 않는다 — 경계를 정해 수동 백필해야 한다 *
+3) MV 생성 시 에러가 난다
+E: MV는 생성 이후의 INSERT에만 반응하는 트리거다. 경계 시각 필터 + 수동 INSERT가 중복·누락 없는 표준 백필이다 (12.1~12.2절).
+```
+
+```quiz
+Q: `uniqState(user_id)`로 저장한 컬럼을 읽는 올바른 방법은?
+1) SELECT users FROM daily_stats
+2) SELECT uniqMerge(users) ... GROUP BY day *
+3) SELECT uniq(users) ...
+E: State로 쓴 것은 반드시 Merge + GROUP BY로 읽는다. 그냥 읽으면 바이너리 상태가 나온다 (12.5절).
+```
+
+```quiz
+Q: MV의 GROUP BY 키가 대상 테이블 ORDER BY보다 세밀하면 (예: GROUP BY d,app,os vs ORDER BY (d,app))?
+1) 에러가 나서 바로 알 수 있다
+2) 행이 조용히 소실되고 키에 없는 컬럼은 임의 값만 남는다 *
+3) 자동으로 ORDER BY가 수정된다
+E: 26.8 실측 — ios/android 2행이 1행으로 합쳐지며 os 구분이 사라졌다. 에러도 경고도 없다. 대상 ORDER BY = MV GROUP BY 규칙을 지켜라 (12.8절).
+```
+
+```quiz
+Q: MV의 SELECT에 JOIN이 들어 있다면 트리거 조건은?
+1) 양쪽 테이블 모두의 INSERT
+2) 왼쪽(원본) 테이블의 INSERT에만 *
+3) 오른쪽 테이블의 INSERT에만
+E: MV는 "INSERT 스트림"에 붙는다. 오른쪽 테이블 변경은 무시된다 — JOIN 양쪽을 다 반영하려면 Refreshable MV를 검토 (12.1, 12.6절).
+```
+
+```quiz
+Q: 일반(incremental) MV와 Refreshable MV의 차이는?
+1) 이름만 다르고 같다
+2) 일반 MV는 INSERT마다 신규 블록만, Refreshable은 주기적으로 전체 재계산 *
+3) Refreshable이 항상 더 빠르다
+E: Refreshable은 cron처럼 주기 실행되는 스냅샷이라 JOIN도 자유롭지만 주기만큼 지연된다. 생성 즉시 최초 리프레시가 돈다는 점도 일반 MV와 정반대 (12.6절).
+```

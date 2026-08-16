@@ -89,3 +89,37 @@ INSERT INTO raw_ingest VALUES (now(), 1, 100);
 ```
 
 MV가 "INSERT 스트림에 붙는 트리거"(12장)임을 이해했다면 자연스러운 응용이다.
+
+## 이해도 체크
+
+```quiz
+Q: Kafka 엔진 테이블을 직접 SELECT하면 안 되는 이유는?
+1) 문법 오류가 나서
+2) 읽는 순간 오프셋이 소모되어 데이터가 사라진 것처럼 보여서 *
+3) 너무 느려서
+E: Kafka 테이블은 흘러가는 스트림이다. 반드시 MV로 MergeTree 테이블에 퍼 나르고, 조회는 저장 테이블에서 한다 (15.2절).
+```
+
+```quiz
+Q: "원본은 저장하지 않고 집계 결과만 유지하라"는 요구의 표준 패턴은?
+1) 원본을 매일 TRUNCATE
+2) Null 엔진 테이블 + MV → AggregatingMergeTree *
+3) 불가능하다
+E: Null 엔진은 INSERT를 받아서 버리지만 MV는 그 스트림에 반응한다. 원본 디스크 0으로 집계만 쌓인다 (15.3절, 26.8 실측).
+```
+
+```quiz
+Q: Kafka 소비를 잠시 멈추는 올바른 방법은?
+1) Kafka 테이블 DROP
+2) 펌프 역할 MV를 DETACH (재개는 ATTACH) *
+3) 서버 종료
+E: MV를 떼면 소비가 멈추고, 그동안 데이터는 Kafka에 남아 있어 재개 후 이어서 소비한다 (15.2절).
+```
+
+```quiz
+Q: 같은 키의 컬럼들이 서로 다른 시점에 도착하는 IoT 텔레메트리(배터리는 아까, 위치는 방금)에 맞는 엔진은?
+1) ReplacingMergeTree — 행 전체 교체
+2) CoalescingMergeTree — 컬럼별 최신 non-NULL 유지 *
+3) SummingMergeTree
+E: Replacing은 행 전체를 갈아치워 안 보낸 컬럼이 NULL로 날아간다. Coalescing(25.6+)은 컬럼 단위로 최신값을 병합한다 (14.7절, 26.8 실측).
+```

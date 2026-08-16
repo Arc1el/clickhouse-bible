@@ -125,6 +125,8 @@ FROM url('http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazon
 
 합격자들의 시간 전략:
 
+![120분 배분 전략 — 훑기 5분, 쉬운 과제 60분, 어려운 과제 45분, 최종 검증 10분](../docs/assets/diagrams/exam-day.svg)
+
 1. **시작하면 과제 전체를 먼저 훑어라.** 쉬운 것부터 해치우고 어려운 것에 시간을
    몰아준다 — 심리적 압박도 줄어든다
 2. 과제마다 **결과 검증 쿼리**(`SELECT count()`, `DESCRIBE`)를 실행해 확인하고 넘어가라
@@ -159,3 +161,37 @@ FROM url('http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.amazon
 - 무료 교육: https://clickhouse.com/learn/real-time-analytics
 - 공식 lab 솔루션: https://github.com/ClickHouse/clickhouse-academy
 - 배지 확인: https://www.credly.com/org/clickhouse/badge/clickhouse-certified-developer
+
+## 이해도 체크
+
+```quiz
+Q: 공식이 "시험 유형과 가장 유사하다"고 지목한 준비 자료는?
+1) 서드파티 객관식 문제집
+2) Real-time Analytics 공식 교육의 lab 실습 *
+3) 블로그 글 정독
+E: "시험은 교육 과정에서 배운 내용에 크게 의존한다"가 공식 문구다. lab 정답지는 github.com/ClickHouse/clickhouse-academy에 공개되어 있다 (18.1절).
+```
+
+```quiz
+Q: 실제 시험 환경에서 SQL을 입력하는 도구는?
+1) 웹 SQL 콘솔 (GUI)
+2) 터미널의 clickhouse-client *
+3) Jupyter 노트북
+E: 시험은 터미널 환경이다. 마지막 1~2주는 반드시 CLI로 연습하고 단축키(\l, \d, 위 화살표)를 손에 익혀라 (18.1절, 2.4절).
+```
+
+```quiz
+Q: 시험 시작 직후 가장 먼저 할 일은?
+1) 1번 과제부터 바로 풀기
+2) 5분간 전체 과제를 훑고 쉬운 것부터 처리 순서 정하기 *
+3) 문서 사이트 북마크 정리
+E: 합격자 공통 조언 — 쉬운 과제를 먼저 해치우면 시간과 심리 모두 유리하다. 한 과제 15분 이상 매몰 금지 (18.4절).
+```
+
+```quiz
+Q: Udemy 등 서드파티 "연습 시험"의 주의점은?
+1) 너무 어렵다
+2) 대부분 객관식이라 실제 실기 시험과 형식이 근본적으로 다르다 *
+3) 유료라서
+E: 실제 시험은 객관식 0문항 전부 실기다. 개념 점검용으로만 쓰고 손 연습을 대체하지 말 것 (18.3절).
+```
