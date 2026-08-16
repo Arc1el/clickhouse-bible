@@ -605,6 +605,7 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 800;
+  white-space: nowrap;
   background: var(--accent);
   color: #201F18;
   border: 1px solid var(--accent-ink);
@@ -614,6 +615,19 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
 }
 .sqlrun:hover { filter: brightness(1.05); }
 .sqlrun:disabled { opacity: 0.5; cursor: wait; }
+.sqlreset {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+.sqlreset:hover { border-color: var(--bad); color: var(--bad); }
 .sqlstat { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .sqlout { flex: 1; overflow-y: auto; padding: 0.8rem 1.1rem 2rem; }
 .sqlout .stmt {
@@ -809,6 +823,7 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
   <textarea class="sqled" id="sqled" spellcheck="false" placeholder="-- 본문 코드의 ▶ 실행 버튼을 누르거나 직접 입력하세요&#10;SELECT version();"></textarea>
   <div class="sqltools">
     <button class="sqlrun" id="sqlrun" type="button">▶ 실행</button>
+    <button class="sqlreset" id="sqlreset" type="button" title="이 장에서 만든 실습 객체를 삭제하는 스크립트 생성">↺ 리셋</button>
     <span class="sqlstat" id="sqlstat">⌘/Ctrl + Enter</span>
   </div>
   <div class="sqlout" id="sqlout"></div>
@@ -1152,6 +1167,90 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
     try { localStorage.setItem(DRAFT, ed.value); } catch (e) {}
   });
 
+  // ---- 스크립트 조립: Fiddle 자기완결 / 되돌리기 ----
+  var SQL_BLOCKS = Array.prototype.slice.call(document.querySelectorAll('pre.code[data-lang="sql"]'));
+
+  function isStateStmt(s) {
+    return /^(CREATE|INSERT|ALTER|SET\s|TRUNCATE|DROP|DELETE|UPDATE|OPTIMIZE|SYSTEM|ATTACH|DETACH|RENAME)/i.test(s);
+  }
+  function usesLocalIO(s) {
+    return /\bfile\s*\(|\bINFILE\b|\bOUTFILE\b|clickhouse-client|localhost:8123/i.test(s);
+  }
+  function parseCreate(s) {
+    var m = s.match(/^CREATE\s+(?:OR\s+REPLACE\s+)?(MATERIALIZED\s+VIEW|VIEW|DICTIONARY|TABLE|DATABASE)\s+(?:IF\s+NOT\s+EXISTS\s+)?([A-Za-z0-9_.`]+)/i);
+    if (!m) return null;
+    return { kind: m[1].toUpperCase().replace(/\s+/g, ' '), name: m[2] };
+  }
+  function dropKindOf(kind) {
+    if (kind === 'DICTIONARY') return 'DICTIONARY';
+    if (kind === 'VIEW') return 'VIEW';
+    return 'TABLE'; // TABLE + MATERIALIZED VIEW 모두 DROP TABLE로 제거 가능
+  }
+  function guardCreate(s) {
+    var c = parseCreate(s);
+    if (!c) return s;
+    if (c.kind === 'DATABASE') {
+      return /IF\s+NOT\s+EXISTS/i.test(s) ? s : s.replace(/^CREATE\s+DATABASE\s+/i, 'CREATE DATABASE IF NOT EXISTS ');
+    }
+    return 'DROP ' + dropKindOf(c.kind) + ' IF EXISTS ' + c.name + ';\n' + s;
+  }
+  // Fiddle용: 이 블록 이전의 상태 구축 문장을 모아 "1회 실행 자기완결 스크립트"로 조립
+  function buildFiddleScript(pre) {
+    var idx = SQL_BLOCKS.indexOf(pre);
+    var pieces = [], skipped = 0;
+    for (var i = 0; i < idx; i++) {
+      splitSql(SQL_BLOCKS[i].querySelector('code').innerText).forEach(function (s) {
+        if (!isStateStmt(s)) return;
+        if (usesLocalIO(s)) { skipped++; return; }
+        pieces.push(guardCreate(s) + ';');
+      });
+    }
+    var out = '';
+    if (pieces.length) {
+      out += '-- ▼ 이전 단계 상태 재구축 (Fiddle은 매 실행 초기화되므로 자동 포함';
+      if (skipped) out += ' · 로컬 파일 의존 ' + skipped + '문장 생략';
+      out += ')\n' + pieces.join('\n') + '\n\n';
+    }
+    out += '-- ▼ 선택한 코드\n' + pre.querySelector('code').innerText.trim() + '\n';
+    return out;
+  }
+  // 되돌리기: 이 장에서 CREATE한 객체들의 DROP 스크립트 (역순)
+  function buildResetScript() {
+    var objs = [], seen = {};
+    SQL_BLOCKS.forEach(function (pre) {
+      splitSql(pre.querySelector('code').innerText).forEach(function (s) {
+        var c = parseCreate(s);
+        if (!c) return;
+        var key = c.kind + ' ' + c.name;
+        if (seen[key]) return;
+        seen[key] = 1;
+        objs.push(c);
+      });
+    });
+    if (!objs.length) return null;
+    var dbs = [], rest = [];
+    objs.forEach(function (o) { (o.kind === 'DATABASE' ? dbs : rest).push(o); });
+    rest.reverse();
+    var lines = ['-- ↺ 이 장에서 만든 실습 객체 되돌리기 — 검토 후 ▶ 실행하세요'];
+    rest.forEach(function (o) { lines.push('DROP ' + dropKindOf(o.kind) + ' IF EXISTS ' + o.name + ';'); });
+    dbs.forEach(function (o) { lines.push('DROP DATABASE IF EXISTS ' + o.name + ';'); });
+    return lines.join('\n');
+  }
+  document.getElementById('sqlreset').addEventListener('click', function () {
+    if (isFiddle()) {
+      openPanel();
+      stat.textContent = 'Fiddle은 실행마다 새 인스턴스라 리셋이 필요 없습니다';
+      return;
+    }
+    var s = buildResetScript();
+    if (!s) { openPanel(); stat.textContent = '이 페이지에서 생성하는 실습 객체가 없습니다'; return; }
+    ed.value = s;
+    try { localStorage.setItem(DRAFT, ed.value); } catch (e) {}
+    openPanel();
+    ed.focus();
+    stat.textContent = '되돌리기 스크립트 로드됨 — 내용 검토 후 ▶ 실행 (삭제라서 자동 실행하지 않음)';
+  });
+
   // ---- 코드 블록 "▶ 실행" 버튼 (SQL만) ----
   document.querySelectorAll('pre.code[data-lang="sql"]').forEach(function (pre) {
     var btn = document.createElement('button');
@@ -1160,7 +1259,9 @@ body.sql-open.sql-push .sqlpanel { box-shadow: none; }
     btn.textContent = '▶ 실행';
     btn.setAttribute('aria-label', '이 SQL을 실행기로 보내기');
     btn.addEventListener('click', function () {
-      ed.value = pre.querySelector('code').innerText;
+      // Fiddle(매 실행 초기화)이면 이전 단계를 포함한 자기완결 스크립트로 조립해 보여주고,
+      // 상태가 유지되는 백엔드(로컬/Cloud)면 블록 그대로 순차 실행
+      ed.value = isFiddle() ? buildFiddleScript(pre) : pre.querySelector('code').innerText;
       try { localStorage.setItem(DRAFT, ed.value); } catch (e) {}
       openPanel();          // 닫혀 있으면 저장된 방식(덮기/나란히)대로 자동 오픈
       runAll();             // 즉시 실행 (접속 미설정이면 접속 패널이 열리며 안내)
