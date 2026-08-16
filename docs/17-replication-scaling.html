@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -461,7 +485,68 @@ pre.code::before {
 </blockquote>
 <h2 id="s1">17.1 두 가지 확장 축</h2>
 <div class="tablewrap"><table><thead><tr><th></th><th>복제 (Replication)</th><th>샤딩 (Sharding)</th></tr></thead><tbody><tr><td>무엇</td><td><strong>같은 데이터</strong>를 여러 서버에 복사</td><td>데이터를 <strong>나눠서</strong> 여러 서버에 분산</td></tr><tr><td>왜</td><td>고가용성(서버 죽어도 서비스), 읽기 분산</td><td>한 대에 안 담기는 용량, 쓰기/쿼리 분산</td></tr><tr><td>도구</td><td>ReplicatedMergeTree + Keeper</td><td>Distributed 엔진 + 클러스터 설정</td></tr></tbody></table></div>
-<p>보통 "N개 샤드 × 샤드당 M개 레플리카" 격자로 조합한다.</p>
+<p>보통 "N개 샤드 × 샤드당 M개 레플리카" 격자로 조합한다. 전형적인 "2샤드 × 2레플리카" 클러스터의 전체 그림을 먼저 눈에 넣고 각 부품을 배우자 — 이 장의 나머지는 이 그림의 구성 요소를 하나씩 설명하는 것이다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 360" role="img" aria-label="Distributed 테이블이 샤딩 키로 쿼리와 삽입을 두 샤드에 분배한다. 각 샤드 안에서는 두 레플리카가 part 단위로 서로 복제하고, Keeper가 복제 메타데이터를 조정한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-repl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+    <marker id="arr-repl2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- Distributed -->
+  <rect x="230" y="20" width="220" height="52" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="340" y="42" text-anchor="middle" fill="#201F18" font-weight="700">Distributed 테이블 (라우터)</text>
+  <text x="340" y="60" text-anchor="middle" fill="#201F18" font-size="10.5">데이터 저장 안 함 — 분배와 취합만</text>
+
+  <!-- 분배 화살표 -->
+  <line x1="290" y1="72" x2="185" y2="112" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-repl)"/>
+  <line x1="390" y1="72" x2="495" y2="112" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-repl)"/>
+  <text x="340" y="98" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">샤딩 키로 분배 · 부분 집계 취합</text>
+
+  <!-- 샤드 1 -->
+  <rect x="40" y="118" width="270" height="150" rx="10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="175" y="140" text-anchor="middle" font-weight="700" fill="currentColor">샤드 1 — 데이터의 절반</text>
+  <rect x="60" y="154" width="106" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="113" y="175" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">레플리카 1A</text>
+  <text x="113" y="192" text-anchor="middle" fill="currentColor" font-size="9.5" opacity="0.7">ReplicatedMergeTree</text>
+  <rect x="186" y="154" width="106" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="239" y="175" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">레플리카 1B</text>
+  <text x="239" y="192" text-anchor="middle" fill="currentColor" font-size="9.5" opacity="0.7">같은 데이터 사본</text>
+  <line x1="166" y1="174" x2="186" y2="174" stroke="currentColor" stroke-width="1.4" marker-end="url(#arr-repl2)" marker-start="url(#arr-repl2)"/>
+  <text x="176" y="226" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.75">part 단위 복제 (fetch)</text>
+  <text x="176" y="244" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.75">어느 쪽에 써도 서로 퍼짐 (멀티마스터)</text>
+
+  <!-- 샤드 2 -->
+  <rect x="370" y="118" width="270" height="150" rx="10" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="505" y="140" text-anchor="middle" font-weight="700" fill="currentColor">샤드 2 — 나머지 절반</text>
+  <rect x="390" y="154" width="106" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="443" y="175" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">레플리카 2A</text>
+  <text x="443" y="192" text-anchor="middle" fill="currentColor" font-size="9.5" opacity="0.7">ReplicatedMergeTree</text>
+  <rect x="516" y="154" width="106" height="52" rx="7" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="569" y="175" text-anchor="middle" fill="currentColor" font-size="11" font-weight="700">레플리카 2B</text>
+  <text x="569" y="192" text-anchor="middle" fill="currentColor" font-size="9.5" opacity="0.7">같은 데이터 사본</text>
+  <line x1="496" y1="174" x2="516" y2="174" stroke="currentColor" stroke-width="1.4" marker-end="url(#arr-repl2)" marker-start="url(#arr-repl2)"/>
+  <text x="506" y="226" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.75">서버 하나가 죽어도</text>
+  <text x="506" y="244" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.75">남은 레플리카가 서비스 (고가용성)</text>
+
+  <!-- Keeper -->
+  <rect x="250" y="296" width="180" height="44" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="340" y="314" text-anchor="middle" fill="currentColor" font-weight="700">ClickHouse Keeper ×3</text>
+  <text x="340" y="330" text-anchor="middle" fill="currentColor" font-size="10" opacity="0.7">"누가 어떤 part를 갖고 있나" 합의 (RAFT)</text>
+  <g stroke="currentColor" stroke-width="1" stroke-dasharray="3 3">
+    <line x1="176" y1="268" x2="278" y2="296"/>
+    <line x1="506" y1="268" x2="402" y2="296"/>
+  </g>
+  <text x="340" y="284" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.6">메타데이터만 — 데이터는 흐르지 않음</text>
+
+  <!-- 축 라벨 -->
+  <text x="40" y="352" font-size="10.5" fill="currentColor" opacity="0.75">샤드 사이 = <tspan fill="#D99E00" font-weight="700">샤딩 (용량·성능)</tspan>   ·   샤드 안 = 복제 (안전)</text>
+</svg>
+<figcaption>Distributed 테이블이 샤딩 키로 두 샤드에 분배하고, 각 샤드 안에서 레플리카끼리 part를 복제하며, Keeper가 복제 메타데이터를 조정한다 — 가로축이 샤딩(용량), 세로축이 복제(안전)</figcaption></figure>
 <h2 id="s2">17.2 ClickHouse Keeper — 조정자</h2>
 <p>레플리카들은 "누가 어떤 part를 갖고 있는지"에 합의해야 한다. 이 조정(coordination)을 담당하는 것이 <strong>ClickHouse Keeper</strong>다.</p>
 <ul>

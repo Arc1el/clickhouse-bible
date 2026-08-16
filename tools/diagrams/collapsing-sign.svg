@@ -1,0 +1,37 @@
+<svg viewBox="0 0 680 292" role="img" aria-label="CollapsingMergeTree에서 상태 변경은 이전 상태와 똑같은 값에 sign -1을 붙인 취소 행과 새 상태 +1 행을 함께 넣는 것이다. 조회는 값에 sign을 곱해 합산하므로 merge 전에도 정확하고, merge는 +1과 -1 쌍을 상쇄해 지운다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-col" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="26" font-weight="700" font-size="13" fill="currentColor">테이블 안의 행 (장바구니: 2개 15,000원 → 3개 22,000원으로 변경)</text>
+
+  <!-- 행 3개 -->
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30" y="40" width="300" height="28" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="30" y="68" width="300" height="28" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="30" y="96" width="300" height="28" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="11">
+    <text x="40" y="58"  fill="currentColor">201  2개  15000   sign +1</text>
+    <text x="40" y="86"  fill="currentColor">201  2개  15000   sign -1</text>
+    <text x="40" y="114" fill="#201F18" font-weight="700">201  3개  22000   sign +1</text>
+  </g>
+  <g font-size="10.5" text-anchor="start">
+    <text x="344" y="58"  fill="currentColor" opacity="0.7">← 최초 상태</text>
+    <text x="344" y="86"  fill="currentColor" opacity="0.7">← 취소 행: 원본과 완전히 같은 값 + sign만 반대</text>
+    <text x="344" y="114" fill="#D99E00" font-weight="700">← 새 상태</text>
+  </g>
+  <!-- 상쇄 안내 -->
+  <text x="30" y="142" font-size="10.5" fill="#D99E00" font-weight="700">↑ 위의 +1/−1 쌍은 merge 때 상쇄되어 함께 사라진다</text>
+
+  <!-- 조회 수식 -->
+  <rect x="30" y="152" width="620" height="72" rx="8" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1.2"/>
+  <text x="44" y="174" font-weight="700" fill="currentColor" font-size="12.5">조회 공식 — merge 여부와 무관하게 항상 정확:</text>
+  <text x="44" y="196" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">sum(item_count × sign) = 2×(+1) + 2×(−1) + 3×(+1) = <tspan fill="#D99E00" font-weight="700">3개</tspan></text>
+  <text x="44" y="214" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">sum(total × sign)      = 15000 − 15000 + 22000     = <tspan fill="#D99E00" font-weight="700">22,000원</tspan>  (+ HAVING sum(sign) > 0)</text>
+
+  <text x="340" y="252" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">Replacing과의 차이: 취소 행 덕분에 merge를 기다리지 않아도 집계가 정확하다.</text>
+  <text x="340" y="270" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">대가: 애플리케이션이 "직전 상태"를 기억했다가 취소 행을 만들어 줘야 한다.</text>
+</svg>

@@ -1,0 +1,57 @@
+<svg viewBox="0 0 680 330" role="img" aria-label="ORDER BY 첫 키가 event_type이면 buy 데이터가 한 구간에 모여 그 구간만 읽지만, 첫 키가 user_id면 buy가 전체에 흩어져 풀스캔이 된다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <text x="340" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">같은 1,000만 행 · 같은 쿼리:  WHERE event_type = 'buy'</text>
+
+  <!-- ===== 좋은 키 ===== -->
+  <text x="30" y="62" font-weight="700" font-size="13" fill="currentColor">✅ ORDER BY (event_type, user_id) — 낮은 카디널리티 먼저</text>
+  <text x="30" y="78" font-size="10.5" fill="currentColor" opacity="0.65">디스크에 event_type 순으로 정렬 → 'buy'가 연속된 한 구간에 모인다</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30"  y="88" width="110" height="34" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="140" y="88" width="110" height="34" fill="#F2C230"/>
+    <rect x="250" y="88" width="110" height="34" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="360" y="88" width="110" height="34" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="470" y="88" width="110" height="34" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="11">
+    <text x="85"  y="109" fill="currentColor" opacity="0.6">click…</text>
+    <text x="195" y="109" fill="#201F18" font-weight="700">buy…buy</text>
+    <text x="305" y="109" fill="currentColor" opacity="0.6">exit…</text>
+    <text x="415" y="109" fill="currentColor" opacity="0.6">share…</text>
+    <text x="525" y="109" fill="currentColor" opacity="0.6">view…</text>
+  </g>
+  <g stroke="#D99E00" stroke-width="2">
+    <line x1="140" y1="134" x2="250" y2="134"/>
+    <line x1="140" y1="128" x2="140" y2="140"/>
+    <line x1="250" y1="128" x2="250" y2="140"/>
+  </g>
+  <text x="195" y="154" text-anchor="middle" fill="#D99E00" font-weight="700" font-size="11.5">이 구간만 읽음 — 실측 251 / 1223 granule</text>
+
+  <!-- ===== 나쁜 키 ===== -->
+  <text x="30" y="196" font-weight="700" font-size="13" fill="currentColor">❌ ORDER BY (user_id, event_type) — 높은 카디널리티 먼저</text>
+  <text x="30" y="212" font-size="10.5" fill="currentColor" opacity="0.65">user_id 순으로 정렬 → 100만 사용자 구간마다 'buy'가 조각조각 흩어진다</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30" y="222" width="550" height="34" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <!-- 흩어진 buy 조각들 -->
+  <g fill="#F2C230">
+    <rect x="46"  y="223" width="7" height="32"/>
+    <rect x="88"  y="223" width="5" height="32"/>
+    <rect x="131" y="223" width="8" height="32"/>
+    <rect x="177" y="223" width="5" height="32"/>
+    <rect x="216" y="223" width="7" height="32"/>
+    <rect x="262" y="223" width="5" height="32"/>
+    <rect x="301" y="223" width="8" height="32"/>
+    <rect x="349" y="223" width="5" height="32"/>
+    <rect x="391" y="223" width="7" height="32"/>
+    <rect x="437" y="223" width="5" height="32"/>
+    <rect x="478" y="223" width="8" height="32"/>
+    <rect x="524" y="223" width="5" height="32"/>
+    <rect x="561" y="223" width="7" height="32"/>
+  </g>
+  <g stroke="currentColor" stroke-width="2">
+    <line x1="30" y1="268" x2="580" y2="268"/>
+    <line x1="30" y1="262" x2="30" y2="274"/>
+    <line x1="580" y1="262" x2="580" y2="274"/>
+  </g>
+  <text x="305" y="288" text-anchor="middle" fill="currentColor" font-weight="700" font-size="11.5">모든 granule에 'buy'가 한 조각씩 존재 → 건너뛸 곳이 없다 — 실측 1223 / 1223 (풀스캔)</text>
+  <text x="340" y="314" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="11.5">인덱스는 "값이 모여 있어야" 건너뛸 수 있다 — ORDER BY 키 순서가 지역성(locality)을 결정한다</text>
+</svg>

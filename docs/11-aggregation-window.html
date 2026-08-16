@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;

@@ -33,10 +33,7 @@ ENGINE = S3('https://bucket.s3.amazonaws.com/events/*.parquet', 'Parquet');
 Kafka 엔진 테이블은 **토픽을 구독하는 소비자**다. 단, Kafka 테이블 자체는
 "흘러가는 스트림"이라 저장·조회용이 아니다. 반드시 **MV로 퍼 나르는 3단 구조**로 쓴다:
 
-```text
-[Kafka 엔진 테이블] --(MV가 계속 읽어서)--> [MergeTree 테이블]
-     (소비자)              (펌프)              (실제 저장소)
-```
+![Kafka 토픽 → Kafka 엔진 테이블(소비자) → MV(펌프) → MergeTree(저장소). Kafka 테이블을 직접 SELECT하면 오프셋이 소모되므로 조회는 항상 저장 테이블에서](../docs/assets/diagrams/kafka-pipeline.svg)
 
 ```sql
 -- ① Kafka 소비자 테이블

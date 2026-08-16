@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -461,8 +485,59 @@ pre.code::before {
 </blockquote>
 <h2 id="s1">12.1 본질: MV는 "INSERT 트리거"다</h2>
 <p>이름 때문에 오해하기 쉽다. ClickHouse의 MV는 "저장된 뷰"가 아니라 <strong>"원본 테이블에 INSERT가 일어날 때마다 실행되어, 그 결과를 다른 테이블에 쓰는 트리거"</strong>다.</p>
-<pre class="code" data-lang="text"><code>INSERT → [원본 테이블] ─(신규 블록만)→ [MV의 SELECT 실행] → [대상 테이블에 INSERT]</code></pre>
-<p>세 가지 결정적 성질이 여기서 나온다:</p>
+<p>우체통에 비유하면: 원본 테이블이 우체통이고, MV는 우체통 입구에 달아둔 <strong>자동 복사기</strong>다. 새 편지가 들어오는 순간 조건에 맞으면 복사본을 만들어 옆의 보관함(대상 테이블)에 넣는다. 핵심은 복사기가 <strong>"들어오는 순간"에만 작동</strong>한다는 것 — 이미 우체통 안에 쌓여 있던 편지는 복사기를 단다고 해서 복사되지 않는다.</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 250" role="img" aria-label="Materialized View는 원본 테이블에 INSERT되는 새 블록에만 트리거되어 변환 결과를 대상 테이블에 쓴다. 이미 저장된 과거 데이터는 통과하지 않으므로 백필이 필요하다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-mv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+    <marker id="arr-mv2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- INSERT -->
+  <rect x="24" y="60" width="104" height="40" rx="6" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="76" y="78" text-anchor="middle" fill="#201F18" font-weight="700">INSERT</text>
+  <text x="76" y="93" text-anchor="middle" fill="#201F18" font-size="10.5">(새 블록)</text>
+
+  <!-- 원본 테이블 -->
+  <rect x="176" y="46" width="140" height="68" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="246" y="74" text-anchor="middle" fill="currentColor" font-weight="700">원본 테이블</text>
+  <text x="246" y="92" text-anchor="middle" fill="currentColor" font-size="10.5" opacity="0.7">events (MergeTree)</text>
+
+  <line x1="128" y1="80" x2="170" y2="80" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-mv)"/>
+  <text x="149" y="72" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">① 저장</text>
+
+  <!-- MV (트리거) -->
+  <rect x="374" y="46" width="150" height="68" rx="8" fill="currentColor" fill-opacity="0.05" stroke="#D99E00" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="449" y="68" text-anchor="middle" fill="currentColor" font-weight="700">Materialized View</text>
+  <text x="449" y="85" text-anchor="middle" font-family="Menlo, monospace" font-size="10" fill="currentColor" opacity="0.75">SELECT … WHERE …</text>
+  <text x="449" y="100" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">= INSERT 트리거 (저장소 아님)</text>
+
+  <line x1="316" y1="80" x2="368" y2="80" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-mv)"/>
+  <text x="342" y="70" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">② 방금 그</text>
+  <text x="342" y="96" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">블록만 통과</text>
+
+  <!-- 대상 테이블 -->
+  <rect x="374" y="160" width="150" height="60" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="449" y="185" text-anchor="middle" fill="currentColor" font-weight="700">대상 테이블 (TO)</text>
+  <text x="449" y="202" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">purchases (MergeTree)</text>
+
+  <line x1="449" y1="114" x2="449" y2="154" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-mv)"/>
+  <text x="516" y="136" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">③ 변환 결과 INSERT</text>
+
+  <!-- 과거 데이터는 통과 안 함 -->
+  <rect x="176" y="160" width="140" height="60" rx="8" fill="currentColor" fill-opacity="0.03" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3"/>
+  <text x="246" y="185" text-anchor="middle" fill="currentColor" opacity="0.7">MV 생성 전의</text>
+  <text x="246" y="201" text-anchor="middle" fill="currentColor" opacity="0.7">과거 데이터</text>
+  <line x1="316" y1="190" x2="368" y2="190" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#arr-mv2)"/>
+  <text x="342" y="181" text-anchor="middle" font-size="13" fill="currentColor" font-weight="700">✗</text>
+  <text x="342" y="212" text-anchor="middle" font-size="10" fill="currentColor" opacity="0.7">통과 안 함 → 백필 필요</text>
+</svg>
+<figcaption>MV는 INSERT되는 새 블록에만 작동하는 트리거다 — 생성 이전의 과거 데이터는 통과하지 않으므로 백필이 필요하다</figcaption></figure>
+<p>세 가지 결정적 성질이 이 그림에서 나온다:</p>
 <ol>
 <li><strong>생성 이후의 INSERT에만 반응한다.</strong> 이미 있던 데이터는 반영되지 않는다 (백필 필요)</li>
 <li>원본을 <strong>다시 읽지 않는다.</strong> 방금 들어온 블록만 SELECT의 입력이 된다 → 비용이 거의 0</li>
@@ -532,7 +607,67 @@ FROM orders;</code></pre>
 FROM daily_revenue
 GROUP BY day, product;</code></pre>
 <h2 id="s6">12.5 집계 MV ② — AggregatingMergeTree + State/Merge ★★★</h2>
-<p>합계 이외의 집계(고유 수, 평균, 분위수)는 "중간 상태(state)"를 저장해야 한다. <strong>시험 영역 4의 핵심 문형이다.</strong> 전체 흐름(26.8 검증):</p>
+<p>합계 이외의 집계(고유 수, 평균, 분위수)는 왜 "중간 상태(state)"라는 개념이 필요할까? 합계는 부분값끼리 더하면 그만이지만(100+50=150), <strong>고유 사용자 수는 "2명"과 "1명"을 더하면 틀린다</strong> — 두 집합에 같은 사람이 겹칠 수 있기 때문이다. 그래서 "결과"가 아니라 "결과를 만들 수 있는 재료"(어떤 사용자들이 있었는지)를 저장해 뒀다가, 읽을 때 재료끼리 합쳐 최종값을 만든다. 이 재료가 <strong>상태(state)</strong>다.</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 268" role="img" aria-label="쓰기 경로에서는 uniqState가 집계의 중간 상태를 만들어 저장하고, 읽기 경로에서는 uniqMerge가 상태들을 합쳐 최종값을 만든다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-sm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="150" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">쓰기 (MV 안)</text>
+  <text x="540" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">읽기 (조회 쿼리)</text>
+
+  <!-- 원본 이벤트 -->
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="24" y="44" width="150" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="68" width="150" height="24" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="92" width="150" height="24" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="32" y="60">8/1 user 1  10.50</text>
+    <text x="32" y="84">8/1 user 2   5.00</text>
+    <text x="32" y="108">8/2 user 1   7.25</text>
+  </g>
+  <text x="99" y="132" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.65">원본 events</text>
+
+  <!-- uniqState 박스 -->
+  <rect x="216" y="56" width="130" height="48" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="281" y="76" text-anchor="middle" font-family="Menlo, monospace" font-size="11.5" fill="#201F18" font-weight="700">uniqState(…)</text>
+  <text x="281" y="92" text-anchor="middle" font-size="10" fill="#201F18">"결과" 대신 "중간 상태"를 반환</text>
+  <line x1="174" y1="80" x2="210" y2="80" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sm)"/>
+
+  <!-- 저장된 상태 -->
+  <text x="252" y="140" font-size="10.5" fill="currentColor" opacity="0.65">AggregatingMergeTree에 저장</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="216" y="150" width="130" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="216" y="176" width="130" height="26" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5" fill="currentColor">
+    <text x="224" y="167">8/1 → 상태▓{1,2}</text>
+    <text x="224" y="193">8/2 → 상태▓{1}</text>
+  </g>
+  <line x1="238" y1="104" x2="238" y2="146" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sm)"/>
+
+  <!-- uniqMerge -->
+  <rect x="416" y="140" width="130" height="48" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.3"/>
+  <text x="481" y="160" text-anchor="middle" font-family="Menlo, monospace" font-size="11.5" fill="#201F18" font-weight="700">uniqMerge(…)</text>
+  <text x="481" y="176" text-anchor="middle" font-size="10" fill="#201F18">상태들을 합쳐 최종값으로</text>
+  <line x1="346" y1="164" x2="410" y2="164" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sm)"/>
+  <text x="378" y="156" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">GROUP BY</text>
+
+  <!-- 최종 결과 -->
+  <rect x="580" y="140" width="76" height="48" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="618" y="160" text-anchor="middle" fill="currentColor" font-weight="700" font-size="12">8/1 → 2명</text>
+  <text x="618" y="177" text-anchor="middle" fill="currentColor" font-weight="700" font-size="12">8/2 → 1명</text>
+  <line x1="546" y1="164" x2="574" y2="164" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sm)"/>
+
+  <text x="340" y="232" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">왜 상태인가? "2명"과 "1명"을 더하면 3명 — 두 날에 겹치는 user 1이 중복된다.</text>
+  <text x="340" y="250" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">상태▓{1,2} + 상태▓{1} = {1,2} → 2명. 상태끼리는 정확하게 합칠 수 있다 — 이것이 State/Merge 쌍의 존재 이유.</text>
+</svg>
+<figcaption>쓰기 경로의 uniqState는 중간 상태를 저장하고, 읽기 경로의 uniqMerge가 상태들을 합쳐 최종값을 만든다 — 상태끼리는 중복 없이 정확하게 합쳐진다</figcaption></figure>
+<p>이것이 <strong>시험 영역 4의 핵심 문형이다.</strong> 전체 흐름(26.8 검증):</p>
 <pre class="code" data-lang="sql"><code>-- ① 원본
 CREATE TABLE events (
     ts      DateTime,

@@ -29,7 +29,15 @@ MergeTree의 동작 원리는 세 문장으로 요약된다:
    (이때도 정렬 유지).
 3. 쿼리는 활성 part들을 병렬로 읽는다.
 
-직접 확인해 보자 (실측 결과):
+책상 위에 쌓이는 메모지를 상상하면 쉽다. 손님이 올 때마다(INSERT) 메모지 한 장을
+책상에 올려두고(part), 한가할 때마다(백그라운드) 메모지들을 **이름순으로 정리해
+노트 한 권에 옮겨 적는다**(merge). 이미 적은 메모지는 절대 고쳐 쓰지 않는다 —
+정리할 때 새 노트를 만들 뿐이다. 이 "고쳐 쓰지 않는다"는 규칙 하나가 MergeTree의
+장점(빠른 쓰기)과 약점(어려운 수정)을 전부 결정한다.
+
+![INSERT마다 part가 하나씩 만들어지고, 백그라운드 merge가 정렬을 유지하며 하나로 합친다 — part 이름의 숫자가 어느 블록을 담았는지 알려준다](../docs/assets/diagrams/mergetree-parts.svg)
+
+이 과정을 실제 SQL로 재현해 보자 (실측 결과):
 
 ```sql
 CREATE TABLE events (id UInt32, msg String) ENGINE = MergeTree ORDER BY id;
@@ -56,7 +64,7 @@ part 이름 `all_1_3_1`의 의미: `파티션ID_시작블록_끝블록_병합레
 이 구조에서 세 가지 성질이 따라 나온다:
 
 - **INSERT가 빠르다** — 기존 데이터를 건드리지 않고 새 조각만 쓴다
-- **UPDATE/DELETE가 어렵다** — part가 불변이므로, 수정하려면 part를 다시 써야 한다(16장)
+- **UPDATE/DELETE가 어렵다** — part가 불변이므로, 수정하려면 part를 다시 써야 한다(14장)
 - **작은 INSERT를 남발하면 안 된다** — part가 폭증해 "too many parts" 에러.
   기본 한도(26.8 실측): 파티션당 **1,000개부터 삽입 지연**(parts_to_delay_insert),
   **3,000개에서 차단**(parts_to_throw_insert). **수천~수만 행씩 묶어서 넣는 것**이 원칙
@@ -64,16 +72,23 @@ part 이름 `all_1_3_1`의 의미: `파티션ID_시작블록_끝블록_병합레
 ## 5.3 Sparse Primary Index — 10억 행을 1초에 찾는 비결
 
 일반 DB의 인덱스는 "모든 행"의 위치를 기록한다(B-tree). ClickHouse는 다르다.
+비유하자면, 두꺼운 전화번호부에서 사람을 찾을 때 우리는 모든 이름을 훑지 않는다 —
+**각 페이지의 첫 이름만 훑어서** "이 페이지에 있겠구나"를 판단하고 그 페이지만 편다.
+ClickHouse의 primary index가 정확히 이 방식이다:
 
 - part 안의 데이터는 **granule(그래뉼)**이라는 8,192행 단위 블록으로 나뉜다
-  (`index_granularity` 설정, 기본 8192)
+  (`index_granularity` 설정, 기본 8192) — 전화번호부의 "페이지"에 해당
 - primary index(`primary.idx`)에는 **각 granule의 첫 행 값만** 기록한다 → "sparse(희소)" 인덱스
 - 10억 행이어도 인덱스 엔트리는 12만 개뿐 → **통째로 메모리에 상주**
 
-쿼리가 오면:
+![쿼리는 메모리의 작은 인덱스를 이진 탐색해 후보 granule을 고르고, 그 granule만 디스크에서 읽는다 — 나머지는 아예 읽지 않는다](../docs/assets/diagrams/sparse-index.svg)
+
+그림의 흐름을 단계로 옮기면:
 
 1. 메모리의 sparse index를 **이진 탐색**해 조건에 걸릴 가능성이 있는 granule만 고른다
+   (그림에서 "34 ≤ 42 < 51"이므로 granule 2가 후보)
 2. 고른 granule만 디스크에서 읽는다 (mark 파일 `.mrk`가 granule → 디스크 위치를 알려줌)
+3. 읽은 8,192행 안에서 실제 조건에 맞는 행을 걸러낸다 — 8,192행쯤은 순식간이다
 
 `EXPLAIN indexes = 1`로 직접 확인할 수 있다 (실측):
 

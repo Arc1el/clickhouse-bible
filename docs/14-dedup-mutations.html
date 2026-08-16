@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -523,6 +547,60 @@ INSERT INTO user_profiles VALUES (101, &#x27;a@x.com&#x27;, &#x27;pro&#x27;,  &#
 <li><code>ReplacingMergeTree(ver)</code> — ver(버전 컬럼) 최댓값 행이 남는다. 생략하면 "마지막에 삽입된 행"이 남는데, 순서 보장이 약하므로 <strong>ver 명시를 권장</strong></li>
 <li>⚠️ <strong>핵심 이해: 중복 제거는 백그라운드 merge 때 일어난다.</strong> merge 전에는 두 행이 공존한다 — "언젠가(eventually)" 중복 제거</li>
 </ul>
+<p>시간 순서로 그려보면 이 엔진의 성격이 분명해진다. "INSERT는 즉시, 정리는 나중에" — 그래서 정리가 되기 전의 조회는 스스로 최신을 골라야 한다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 288" role="img" aria-label="ReplacingMergeTree에서 같은 키로 두 번 INSERT하면 merge 전까지 두 버전이 공존한다. 그동안의 조회는 FINAL이나 argMax로 최신만 골라 읽고, 언젠가 백그라운드 merge가 옛 버전을 제거한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-rep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arr-rep-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 시간축 -->
+  <line x1="30" y1="52" x2="650" y2="52" stroke="currentColor" stroke-width="1.4" marker-end="url(#arr-rep)"/>
+  <text x="655" y="42" text-anchor="end" font-size="10.5" fill="currentColor" opacity="0.65">시간 →</text>
+  <g fill="currentColor" font-size="11" text-anchor="middle" font-weight="700">
+    <text x="100" y="40">INSERT v1</text>
+    <text x="260" y="40">INSERT v2</text>
+    <text x="530" y="40">백그라운드 merge (언젠가)</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.4">
+    <line x1="100" y1="46" x2="100" y2="58"/>
+    <line x1="260" y1="46" x2="260" y2="58"/>
+    <line x1="530" y1="46" x2="530" y2="58"/>
+  </g>
+
+  <!-- merge 전 구간: 두 행 공존 -->
+  <text x="180" y="88" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">merge 전 — 테이블 안 (두 버전 공존!)</text>
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="60" y="98" width="240" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="60" y="124" width="240" height="26" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5">
+    <text x="70" y="115" fill="currentColor">101 free  ver=8/01  (옛것)</text>
+    <text x="70" y="141" fill="#201F18" font-weight="700">101 pro   ver=8/05  (최신)</text>
+  </g>
+
+  <!-- 조회 경로 -->
+  <rect x="360" y="98" width="180" height="52" rx="8" fill="currentColor" fill-opacity="0.05" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="450" y="118" text-anchor="middle" fill="currentColor" font-weight="700" font-size="11.5">이 기간의 조회는 직접 골라야</text>
+  <text x="450" y="136" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" fill="#D99E00" font-weight="700">FINAL 또는 argMax(col, ver)</text>
+  <line x1="300" y1="124" x2="354" y2="124" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-rep-acc)"/>
+  <text x="327" y="116" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">→ pro</text>
+
+  <!-- merge 후 -->
+  <text x="180" y="196" text-anchor="middle" font-weight="700" font-size="12.5" fill="currentColor">merge 후 — ver 최댓값 행만 생존</text>
+  <rect x="60" y="206" width="240" height="26" fill="#F2C230" stroke="currentColor" stroke-width="1.1"/>
+  <text x="70" y="223" font-family="Menlo, monospace" font-size="10.5" fill="#201F18" font-weight="700">101 pro   ver=8/05</text>
+  <line x1="180" y1="156" x2="180" y2="190" stroke="currentColor" stroke-width="1.4" marker-end="url(#arr-rep)"/>
+  <text x="192" y="176" font-size="10.5" fill="currentColor" opacity="0.7">중복 제거는 이때 일어난다</text>
+
+  <text x="340" y="264" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">핵심: "INSERT만 하면 언젠가(eventually) 최신만 남는다" — 즉시성이 필요하면 조회 쪽에서 FINAL/argMax로 해결</text>
+</svg>
+<figcaption>같은 키로 두 번 INSERT하면 merge 전까지 두 버전이 공존한다 — 그동안의 조회는 FINAL 또는 argMax로 최신을 고르고, merge가 언젠가 옛 버전을 지운다</figcaption></figure>
 <h3 id="s6">조회 시점 중복 제거 — 두 가지 방법 (실측 검증)</h3>
 <pre class="code" data-lang="sql"><code>-- 방법 1: FINAL — 읽으면서 즉석 병합. 간편하지만 대규모에선 비용 큼
 SELECT * FROM user_profiles FINAL WHERE user_id = 101;
@@ -563,6 +641,46 @@ INSERT INTO cart_state VALUES (201, 2, 15000, 1);
 INSERT INTO cart_state VALUES
     (201, 2, 15000, -1),   -- ⚠️ 취소 행은 원본과 값이 완전히 같아야 한다 (sign만 반대)
     (201, 3, 22000, 1);</code></pre>
+<p>가계부에서 잘못 적은 지출을 지우개로 지우는 대신 <strong>"−15,000원"이라고 한 줄 더 적어 상쇄</strong>하는 방식이다. 장부(part)는 불변이니 지울 수 없지만, 반대 부호를 더하면 합계는 항상 정확하다:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 292" role="img" aria-label="CollapsingMergeTree에서 상태 변경은 이전 상태와 똑같은 값에 sign -1을 붙인 취소 행과 새 상태 +1 행을 함께 넣는 것이다. 조회는 값에 sign을 곱해 합산하므로 merge 전에도 정확하고, merge는 +1과 -1 쌍을 상쇄해 지운다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-col" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="30" y="26" font-weight="700" font-size="13" fill="currentColor">테이블 안의 행 (장바구니: 2개 15,000원 → 3개 22,000원으로 변경)</text>
+
+  <!-- 행 3개 -->
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30" y="40" width="300" height="28" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="30" y="68" width="300" height="28" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="30" y="96" width="300" height="28" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="11">
+    <text x="40" y="58"  fill="currentColor">201  2개  15000   sign +1</text>
+    <text x="40" y="86"  fill="currentColor">201  2개  15000   sign -1</text>
+    <text x="40" y="114" fill="#201F18" font-weight="700">201  3개  22000   sign +1</text>
+  </g>
+  <g font-size="10.5" text-anchor="start">
+    <text x="344" y="58"  fill="currentColor" opacity="0.7">← 최초 상태</text>
+    <text x="344" y="86"  fill="currentColor" opacity="0.7">← 취소 행: 원본과 완전히 같은 값 + sign만 반대</text>
+    <text x="344" y="114" fill="#D99E00" font-weight="700">← 새 상태</text>
+  </g>
+  <!-- 상쇄 안내 -->
+  <text x="30" y="142" font-size="10.5" fill="#D99E00" font-weight="700">↑ 위의 +1/−1 쌍은 merge 때 상쇄되어 함께 사라진다</text>
+
+  <!-- 조회 수식 -->
+  <rect x="30" y="152" width="620" height="72" rx="8" fill="currentColor" fill-opacity="0.04" stroke="currentColor" stroke-width="1.2"/>
+  <text x="44" y="174" font-weight="700" fill="currentColor" font-size="12.5">조회 공식 — merge 여부와 무관하게 항상 정확:</text>
+  <text x="44" y="196" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">sum(item_count × sign) = 2×(+1) + 2×(−1) + 3×(+1) = <tspan fill="#D99E00" font-weight="700">3개</tspan></text>
+  <text x="44" y="214" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">sum(total × sign)      = 15000 − 15000 + 22000     = <tspan fill="#D99E00" font-weight="700">22,000원</tspan>  (+ HAVING sum(sign) > 0)</text>
+
+  <text x="340" y="252" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">Replacing과의 차이: 취소 행 덕분에 merge를 기다리지 않아도 집계가 정확하다.</text>
+  <text x="340" y="270" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">대가: 애플리케이션이 "직전 상태"를 기억했다가 취소 행을 만들어 줘야 한다.</text>
+</svg>
+<figcaption>상태 변경 = 이전 상태의 취소 행(-1) + 새 상태(+1)를 INSERT. 조회는 sign을 곱해 합산하므로 merge 전에도 정확하고, merge가 +1/-1 쌍을 상쇄해 지운다</figcaption></figure>
 <p>merge 때 같은 키의 +1/-1 쌍이 상쇄되어 사라진다. 조회는 <strong>merge 여부와 무관하게 정확한</strong> 다음 패턴으로:</p>
 <pre class="code" data-lang="sql"><code>SELECT
     user_id,

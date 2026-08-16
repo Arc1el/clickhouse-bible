@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -458,6 +482,66 @@ pre.code::before {
 <p>시험 영역 2: 로컬 파일 삽입, 클라우드 스토리지(S3) 삽입, Parquet/CSV/TSV,</p>
 <p><strong>삽입 중 컬럼 변환</strong>, 테이블 간 복사. 전부 이 장에 있다.</p>
 </blockquote>
+<p>이 장의 내용은 많아 보이지만, 사실 <strong>패턴은 단 하나</strong>다. 데이터가 로컬 파일에 있든 S3에 있든 다른 테이블에 있든, 전부 <code>INSERT INTO ... SELECT ...</code> 한 문장으로 수렴하고, 원천에 따라 FROM 자리의 함수만 바뀐다. 그리고 변환(타입 축소, 이름 변경, 계산)은 전부 SELECT 절에서 일어난다. 이 지도를 머리에 넣고 시작하자:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 268" role="img" aria-label="로컬 파일, HTTP, S3, 다른 테이블, 스트림 등 어떤 원천이든 전부 INSERT INTO SELECT 한 패턴으로 수렴하고, SELECT 절에서 타입 변환과 컬럼 가공을 처리한 뒤 MergeTree에 저장된다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-ing" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arr-ing-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 원천들 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="24" y="28"  width="168" height="34" rx="7" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="72"  width="168" height="34" rx="7" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="116" width="168" height="34" rx="7" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="160" width="168" height="34" rx="7" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="24" y="204" width="168" height="34" rx="7" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g font-size="11" fill="currentColor">
+    <text x="36" y="49">로컬 파일 — <tspan font-family="Menlo, monospace" font-size="10.5">file()</tspan></text>
+    <text x="36" y="93">웹의 파일 — <tspan font-family="Menlo, monospace" font-size="10.5">url()</tspan></text>
+    <text x="36" y="137">클라우드 — <tspan font-family="Menlo, monospace" font-size="10.5">s3() / gcs()</tspan></text>
+    <text x="36" y="181">다른 테이블</text>
+    <text x="36" y="225">스트림 — <tspan font-family="Menlo, monospace" font-size="10.5">Kafka + MV</tspan></text>
+  </g>
+  <g font-size="9.5" fill="currentColor" opacity="0.55" text-anchor="end">
+    <text x="186" y="49">CSV</text>
+    <text x="186" y="93">Parquet</text>
+    <text x="186" y="137">Parquet</text>
+    <text x="186" y="181">Native</text>
+    <text x="186" y="225">JSONEachRow</text>
+  </g>
+
+  <!-- 수렴 화살표 -->
+  <g stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-ing)">
+    <line x1="192" y1="45"  x2="262" y2="110"/>
+    <line x1="192" y1="89"  x2="262" y2="122"/>
+    <line x1="192" y1="133" x2="262" y2="133"/>
+    <line x1="192" y1="177" x2="262" y2="144"/>
+    <line x1="192" y1="221" x2="262" y2="156"/>
+  </g>
+
+  <!-- 중앙: INSERT SELECT -->
+  <rect x="268" y="92" width="230" height="84" rx="10" fill="#F2C230" stroke="#D99E00" stroke-width="1.5"/>
+  <text x="383" y="116" text-anchor="middle" font-family="Menlo, monospace" font-size="12" fill="#201F18" font-weight="700">INSERT INTO … SELECT …</text>
+  <text x="383" y="136" text-anchor="middle" font-size="10.5" fill="#201F18">SELECT 절 = 변환 지점</text>
+  <text x="383" y="152" text-anchor="middle" font-size="10.5" fill="#201F18">타입 축소 · 이름 변경 · 계산 · 날짜 파싱</text>
+  <text x="383" y="168" text-anchor="middle" font-size="10.5" fill="#201F18" opacity="0.8">(스키마 추론은 DESCRIBE로 미리 확인)</text>
+
+  <!-- 저장 -->
+  <line x1="498" y1="134" x2="552" y2="134" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-ing-acc)"/>
+  <rect x="558" y="106" width="100" height="56" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="608" y="130" text-anchor="middle" fill="currentColor" font-weight="700">MergeTree</text>
+  <text x="608" y="148" text-anchor="middle" fill="currentColor" font-size="10" opacity="0.7">배치로 저장</text>
+
+  <text x="340" y="258" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">원천이 무엇이든 패턴은 하나 — FROM 자리의 함수만 바뀐다. 이것이 시험 영역 2의 전부다.</text>
+</svg>
+<figcaption>어떤 원천이든 INSERT INTO … SELECT 한 패턴으로 수렴한다 — FROM 자리의 함수만 바뀌고, 변환은 SELECT 절이 담당한다</figcaption></figure>
 <h2 id="s1">8.1 INSERT의 네 가지 형태</h2>
 <pre class="code" data-lang="sql"><code>-- ① 값 직접 나열
 INSERT INTO t VALUES (1, &#x27;a&#x27;), (2, &#x27;b&#x27;);

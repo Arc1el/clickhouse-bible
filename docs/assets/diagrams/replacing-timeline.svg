@@ -1,0 +1,51 @@
+<svg viewBox="0 0 680 288" role="img" aria-label="ReplacingMergeTree에서 같은 키로 두 번 INSERT하면 merge 전까지 두 버전이 공존한다. 그동안의 조회는 FINAL이나 argMax로 최신만 골라 읽고, 언젠가 백그라운드 merge가 옛 버전을 제거한다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-rep" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B8878"/>
+    </marker>
+    <marker id="arr-rep-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 시간축 -->
+  <line x1="30" y1="52" x2="650" y2="52" stroke="#8B8878" stroke-width="1.4" marker-end="url(#arr-rep)"/>
+  <text x="655" y="42" text-anchor="end" font-size="10.5" fill="#8B8878" opacity="0.65">시간 →</text>
+  <g fill="#8B8878" font-size="11" text-anchor="middle" font-weight="700">
+    <text x="100" y="40">INSERT v1</text>
+    <text x="260" y="40">INSERT v2</text>
+    <text x="530" y="40">백그라운드 merge (언젠가)</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.4">
+    <line x1="100" y1="46" x2="100" y2="58"/>
+    <line x1="260" y1="46" x2="260" y2="58"/>
+    <line x1="530" y1="46" x2="530" y2="58"/>
+  </g>
+
+  <!-- merge 전 구간: 두 행 공존 -->
+  <text x="180" y="88" text-anchor="middle" font-weight="700" font-size="12.5" fill="#8B8878">merge 전 — 테이블 안 (두 버전 공존!)</text>
+  <g stroke="#8B8878" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="60" y="98" width="240" height="26" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="60" y="124" width="240" height="26" fill="#F2C230"/>
+  </g>
+  <g font-family="Menlo, monospace" font-size="10.5">
+    <text x="70" y="115" fill="#8B8878">101 free  ver=8/01  (옛것)</text>
+    <text x="70" y="141" fill="#201F18" font-weight="700">101 pro   ver=8/05  (최신)</text>
+  </g>
+
+  <!-- 조회 경로 -->
+  <rect x="360" y="98" width="180" height="52" rx="8" fill="#8B8878" fill-opacity="0.05" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="450" y="118" text-anchor="middle" fill="#8B8878" font-weight="700" font-size="11.5">이 기간의 조회는 직접 골라야</text>
+  <text x="450" y="136" text-anchor="middle" font-family="Menlo, monospace" font-size="10.5" fill="#D99E00" font-weight="700">FINAL 또는 argMax(col, ver)</text>
+  <line x1="300" y1="124" x2="354" y2="124" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-rep-acc)"/>
+  <text x="327" y="116" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">→ pro</text>
+
+  <!-- merge 후 -->
+  <text x="180" y="196" text-anchor="middle" font-weight="700" font-size="12.5" fill="#8B8878">merge 후 — ver 최댓값 행만 생존</text>
+  <rect x="60" y="206" width="240" height="26" fill="#F2C230" stroke="#8B8878" stroke-width="1.1"/>
+  <text x="70" y="223" font-family="Menlo, monospace" font-size="10.5" fill="#201F18" font-weight="700">101 pro   ver=8/05</text>
+  <line x1="180" y1="156" x2="180" y2="190" stroke="#8B8878" stroke-width="1.4" marker-end="url(#arr-rep)"/>
+  <text x="192" y="176" font-size="10.5" fill="#8B8878" opacity="0.7">중복 제거는 이때 일어난다</text>
+
+  <text x="340" y="264" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">핵심: "INSERT만 하면 언젠가(eventually) 최신만 남는다" — 즉시성이 필요하면 조회 쪽에서 FINAL/argMax로 해결</text>
+</svg>

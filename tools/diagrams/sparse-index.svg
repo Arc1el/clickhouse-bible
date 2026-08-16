@@ -1,0 +1,58 @@
+<svg viewBox="0 0 680 330" role="img" aria-label="데이터는 8192행짜리 granule로 나뉘고, primary.idx는 granule마다 첫 값 하나만 기록한다. 쿼리는 이 작은 인덱스를 이진 탐색해 조건에 맞는 granule 하나만 디스크에서 읽는다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-sparse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 쿼리 -->
+  <rect x="30" y="18" width="250" height="32" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="155" y="38" text-anchor="middle" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">WHERE user_id = 42</text>
+
+  <!-- primary.idx -->
+  <text x="155" y="86" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">primary.idx (메모리 상주)</text>
+  <text x="155" y="102" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.65">granule마다 "첫 행의 키" 하나만 기록</text>
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="80" y="112" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="138" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="164" width="150" height="26" fill="#F2C230"/>
+    <rect x="80" y="190" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="216" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-family="Menlo, monospace" font-size="11">
+    <text x="155" y="129" fill="currentColor">granule 0 → 0</text>
+    <text x="155" y="155" fill="currentColor">granule 1 → 17</text>
+    <text x="155" y="181" fill="#201F18" font-weight="700">granule 2 → 34</text>
+    <text x="155" y="207" fill="currentColor">granule 3 → 51</text>
+    <text x="155" y="233" fill="currentColor">granule 4 → 68</text>
+  </g>
+  <!-- 이진 탐색 화살표 -->
+  <line x1="58" y1="54" x2="76" y2="116" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sparse)"/>
+  <text x="56" y="86" text-anchor="end" font-size="10.5" fill="#D99E00" font-weight="700">이진 탐색</text>
+  <text x="236" y="200" font-size="10.5" fill="#D99E00" font-weight="700">34 ≤ 42 &lt; 51</text>
+
+  <!-- 디스크의 granule들 -->
+  <text x="500" y="86" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">디스크의 컬럼 데이터 (part 내부)</text>
+  <text x="500" y="102" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.65">granule = 8,192행 묶음 (index_granularity)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="390" y="112" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="138" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="164" width="220" height="26" fill="#F2C230"/>
+    <rect x="390" y="190" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="216" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="10.5">
+    <text x="500" y="129" fill="currentColor" opacity="0.55">granule 0 — 읽지 않음</text>
+    <text x="500" y="155" fill="currentColor" opacity="0.55">granule 1 — 읽지 않음</text>
+    <text x="500" y="181" fill="#201F18" font-weight="700">granule 2 — 이것만 읽음!</text>
+    <text x="500" y="207" fill="currentColor" opacity="0.55">granule 3 — 읽지 않음</text>
+    <text x="500" y="233" fill="currentColor" opacity="0.55">granule 4 — 읽지 않음</text>
+  </g>
+  <!-- idx → granule 화살표 -->
+  <line x1="234" y1="177" x2="384" y2="177" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-sparse)"/>
+  <text x="309" y="170" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">mark 파일이 위치 안내</text>
+
+  <text x="340" y="278" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">"모든 행"이 아니라 "granule의 첫 행"만 인덱싱 → 그래서 sparse(희소) 인덱스.</text>
+  <text x="340" y="296" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">10억 행이어도 엔트리는 10억 ÷ 8,192 ≈ 12만 개 → 인덱스 전체가 메모리에 들어간다.</text>
+  <text x="340" y="314" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">EXPLAIN indexes=1의 "Granules: 1/5"가 바로 이 그림의 결과다.</text>
+</svg>

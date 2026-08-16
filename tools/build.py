@@ -47,6 +47,11 @@ def inline(s):
     s = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2">\1</a>', s)
     return s
 
+def diagram_html(alt, fname):
+    svg = (TOOLS / 'diagrams' / fname).read_text(encoding='utf-8').strip()
+    return ('<figure class="diagram">\n%s\n<figcaption>%s</figcaption></figure>'
+            % (svg, inline(alt)))
+
 def convert(md):
     """마크다운 본문 → HTML (h1은 건너뛰고 별도 처리)"""
     out = []
@@ -78,6 +83,13 @@ def convert(md):
            or ln.strip().startswith('<summary>'):
             close_lists()
             out.append(ln.strip())
+            i += 1
+            continue
+        # 다이어그램: ![캡션](../docs/assets/diagrams/이름.svg) → 인라인 SVG
+        m = re.match(r'^!\[([^\]]*)\]\(\.\./docs/assets/diagrams/([a-z0-9-]+\.svg)\)$', ln.strip())
+        if m:
+            close_lists()
+            out.append(diagram_html(m.group(1), m.group(2)))
             i += 1
             continue
         if ln.strip().startswith('|') and i + 1 < len(lines) and re.match(r'^\s*\|[\s:|-]+\|\s*$', lines[i+1]):
@@ -197,6 +209,13 @@ def build_nav(chapters, active_slug):
 def main():
     shell = (TOOLS / 'shell.html').read_text(encoding='utf-8')
     DOCS.mkdir(parents=True, exist_ok=True)
+
+    # 다이어그램을 GitHub 마크다운용으로 복사 (currentColor → 양 테마에서 읽히는 고정색)
+    diag_out = DOCS / 'assets' / 'diagrams'
+    diag_out.mkdir(parents=True, exist_ok=True)
+    for svg_file in sorted((TOOLS / 'diagrams').glob('*.svg')):
+        content = svg_file.read_text(encoding='utf-8').replace('currentColor', '#8B8878')
+        (diag_out / svg_file.name).write_text(content, encoding='utf-8')
 
     # 1) 전체 장 메타 수집
     chapters = {}

@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -469,8 +493,47 @@ CREATE TABLE s3_events (ts DateTime, user_id UInt32)
 ENGINE = S3(&#x27;https://bucket.s3.amazonaws.com/events/*.parquet&#x27;, &#x27;Parquet&#x27;);</code></pre>
 <h2 id="s2">15.2 Kafka 연동 — 표준 3단 패턴</h2>
 <p>Kafka 엔진 테이블은 <strong>토픽을 구독하는 소비자</strong>다. 단, Kafka 테이블 자체는 "흘러가는 스트림"이라 저장·조회용이 아니다. 반드시 <strong>MV로 퍼 나르는 3단 구조</strong>로 쓴다:</p>
-<pre class="code" data-lang="text"><code>[Kafka 엔진 테이블] --(MV가 계속 읽어서)--&gt; [MergeTree 테이블]
-     (소비자)              (펌프)              (실제 저장소)</code></pre>
+<figure class="diagram">
+<svg viewBox="0 0 680 224" role="img" aria-label="Kafka 토픽을 Kafka 엔진 테이블이 구독하고, Materialized View가 계속 읽어 MergeTree 저장 테이블로 퍼 나른다. Kafka 테이블을 직접 SELECT하면 오프셋이 소모되므로 금지" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-kfk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- Kafka -->
+  <rect x="24" y="56" width="150" height="64" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="99" y="82" text-anchor="middle" fill="currentColor" font-weight="700">Kafka 토픽</text>
+  <text x="99" y="100" text-anchor="middle" fill="currentColor" font-size="10.5" opacity="0.7">events (스트림)</text>
+
+  <!-- Kafka 엔진 -->
+  <rect x="232" y="56" width="160" height="64" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="312" y="78" text-anchor="middle" fill="currentColor" font-weight="700">① Kafka 엔진 테이블</text>
+  <text x="312" y="95" text-anchor="middle" fill="currentColor" font-size="10.5" opacity="0.7">소비자 — 흘러갈 뿐</text>
+  <text x="312" y="110" text-anchor="middle" fill="currentColor" font-size="10.5" opacity="0.7">저장·조회용 아님</text>
+  <line x1="174" y1="88" x2="226" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+  <text x="200" y="80" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">구독</text>
+
+  <!-- MV 펌프 -->
+  <rect x="450" y="56" width="90" height="64" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="495" y="82" text-anchor="middle" fill="#201F18" font-weight="700">② MV</text>
+  <text x="495" y="99" text-anchor="middle" fill="#201F18" font-size="10.5">펌프 (+변환)</text>
+  <line x1="392" y1="88" x2="444" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+  <text x="418" y="80" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">계속 읽음</text>
+
+  <!-- 저장 테이블 -->
+  <rect x="576" y="56" width="84" height="64" rx="8" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.3"/>
+  <text x="618" y="82" text-anchor="middle" fill="currentColor" font-weight="700">③ MergeTree</text>
+  <text x="618" y="99" text-anchor="middle" fill="currentColor" font-size="10.5" opacity="0.7">실제 저장소</text>
+  <line x1="540" y1="88" x2="570" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+
+  <!-- 직접 조회 금지 -->
+  <text x="312" y="152" text-anchor="middle" font-size="12" fill="currentColor" font-weight="700">✗ 직접 SELECT 금지</text>
+  <text x="312" y="170" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.7">읽는 순간 오프셋이 소모되어 데이터가 "사라진" 것처럼 보인다</text>
+
+  <text x="340" y="204" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">조회는 항상 ③에서. 소비 일시정지 = MV를 DETACH, 재개 = ATTACH (그 사이 데이터는 Kafka에 남아 있어 안전)</text>
+</svg>
+<figcaption>Kafka 토픽 → Kafka 엔진 테이블(소비자) → MV(펌프) → MergeTree(저장소). Kafka 테이블을 직접 SELECT하면 오프셋이 소모되므로 조회는 항상 저장 테이블에서</figcaption></figure>
 <pre class="code" data-lang="sql"><code>-- ① Kafka 소비자 테이블
 CREATE TABLE kafka_events_queue (
     ts      DateTime,

@@ -117,6 +117,11 @@ ALTER TABLE logs MATERIALIZE INDEX level_idx SETTINGS mutations_sync = 1;  -- �
 `GRANULARITY 4` = granule 4개(= 32,768행) 묶음마다 요약 하나. (primary index의
 index_granularity와 다른 개념이니 혼동 주의)
 
+동작 방식을 minmax 인덱스로 그려보면 이렇다 — 포인트는 인덱스가 답을 "찾아주는" 것이
+아니라, 요약만 보고 **"여기엔 답이 없다"가 증명되는 구간을 읽기에서 면제**해 준다는 것:
+
+![minmax 인덱스는 구간 요약(min·max)만 보고 조건에 맞을 수 없는 구간을 통째로 건너뛴다](../docs/assets/diagrams/skip-index.svg)
+
 ### 종류별 선택 기준 (시험은 set과 minmax를 명시)
 
 | 타입 | 저장하는 요약 | 잘 맞는 경우 |

@@ -1,0 +1,94 @@
+<svg viewBox="0 0 680 332" role="img" aria-label="같은 테이블을 행 지향으로 저장하면 가격 하나를 집계해도 12칸 전부 읽지만, 열 지향으로 저장하면 가격 3칸만 읽는다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <!-- 쿼리 라벨 -->
+  <text x="340" y="22" text-anchor="middle" font-weight="700" font-size="13" fill="#8B8878">SELECT sum(가격) FROM 주문  —  필요한 것은 "가격" 컬럼뿐</text>
+
+  <!-- ===== 패널 A: 행 지향 ===== -->
+  <text x="30" y="62" font-weight="700" font-size="13" fill="#8B8878">행 지향 (MySQL 등) — 행 단위로 이어 붙여 저장</text>
+  <!-- 12칸: 행1(id,이름,가격,날짜) 행2 행3 / 가격 = index 2,6,10 -->
+  <g stroke="#8B8878" stroke-width="1.1">
+    <rect x="30"  y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="76"  y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="122" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="168" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="214" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="260" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="306" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="352" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="398" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="444" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="490" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="536" y="76" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="11">
+    <text x="53"  y="95" fill="#8B8878">id</text>
+    <text x="99"  y="95" fill="#8B8878">이름</text>
+    <text x="145" y="95" fill="#201F18">가격</text>
+    <text x="191" y="95" fill="#8B8878">날짜</text>
+    <text x="237" y="95" fill="#8B8878">id</text>
+    <text x="283" y="95" fill="#8B8878">이름</text>
+    <text x="329" y="95" fill="#201F18">가격</text>
+    <text x="375" y="95" fill="#8B8878">날짜</text>
+    <text x="421" y="95" fill="#8B8878">id</text>
+    <text x="467" y="95" fill="#8B8878">이름</text>
+    <text x="513" y="95" fill="#201F18">가격</text>
+    <text x="559" y="95" fill="#8B8878">날짜</text>
+  </g>
+  <!-- 행 구분 브레이스 -->
+  <g font-size="10" fill="#8B8878" opacity="0.6" text-anchor="middle">
+    <text x="122" y="72">← 1번 행 →</text>
+    <text x="306" y="72">← 2번 행 →</text>
+    <text x="490" y="72">← 3번 행 →</text>
+  </g>
+  <!-- 읽기 범위 -->
+  <g stroke="#8B8878" stroke-width="1.6">
+    <line x1="30" y1="120" x2="582" y2="120"/>
+    <line x1="30" y1="114" x2="30" y2="126"/>
+    <line x1="582" y1="114" x2="582" y2="126"/>
+  </g>
+  <text x="306" y="141" text-anchor="middle" fill="#8B8878" font-weight="700">디스크에서 읽는 범위: 12칸 전부 (가격이 사이사이 끼어 있어 건너뛸 수 없다)</text>
+
+  <!-- ===== 패널 B: 열 지향 ===== -->
+  <text x="30" y="196" font-weight="700" font-size="13" fill="#8B8878">열 지향 (ClickHouse) — 같은 컬럼끼리 모아 저장 (컬럼 = 파일 하나)</text>
+  <g stroke="#8B8878" stroke-width="1.1">
+    <rect x="30"  y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="76"  y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="122" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="168" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="214" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="260" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="306" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="352" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="398" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="444" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="490" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="536" y="210" width="46" height="30" fill="#8B8878" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="11">
+    <text x="53"  y="229" fill="#8B8878">id</text>
+    <text x="99"  y="229" fill="#8B8878">id</text>
+    <text x="145" y="229" fill="#8B8878">id</text>
+    <text x="191" y="229" fill="#8B8878">이름</text>
+    <text x="237" y="229" fill="#8B8878">이름</text>
+    <text x="283" y="229" fill="#8B8878">이름</text>
+    <text x="329" y="229" fill="#201F18">가격</text>
+    <text x="375" y="229" fill="#201F18">가격</text>
+    <text x="421" y="229" fill="#201F18">가격</text>
+    <text x="467" y="229" fill="#8B8878">날짜</text>
+    <text x="513" y="229" fill="#8B8878">날짜</text>
+    <text x="559" y="229" fill="#8B8878">날짜</text>
+  </g>
+  <g font-size="10" fill="#8B8878" opacity="0.6" text-anchor="middle">
+    <text x="99"  y="206">id 파일</text>
+    <text x="237" y="206">이름 파일</text>
+    <text x="375" y="206">가격 파일</text>
+    <text x="513" y="206">날짜 파일</text>
+  </g>
+  <!-- 읽기 범위: 가격 그룹만 -->
+  <g stroke="#D99E00" stroke-width="2">
+    <line x1="306" y1="254" x2="444" y2="254"/>
+    <line x1="306" y1="248" x2="306" y2="260"/>
+    <line x1="444" y1="248" x2="444" y2="260"/>
+  </g>
+  <text x="375" y="275" text-anchor="middle" fill="#D99E00" font-weight="700">읽는 범위: 가격 3칸뿐</text>
+  <text x="340" y="308" text-anchor="middle" fill="#8B8878" opacity="0.75" font-size="11.5">읽는 데이터 1/4 + 비슷한 값이 모여 있어 압축까지 극대화 — 이것이 ClickHouse가 빠른 이유의 절반이다</text>
+</svg>

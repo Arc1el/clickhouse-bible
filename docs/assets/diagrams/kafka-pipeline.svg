@@ -1,0 +1,39 @@
+<svg viewBox="0 0 680 224" role="img" aria-label="Kafka 토픽을 Kafka 엔진 테이블이 구독하고, Materialized View가 계속 읽어 MergeTree 저장 테이블로 퍼 나른다. Kafka 테이블을 직접 SELECT하면 오프셋이 소모되므로 금지" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-kfk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- Kafka -->
+  <rect x="24" y="56" width="150" height="64" rx="8" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.3"/>
+  <text x="99" y="82" text-anchor="middle" fill="#8B8878" font-weight="700">Kafka 토픽</text>
+  <text x="99" y="100" text-anchor="middle" fill="#8B8878" font-size="10.5" opacity="0.7">events (스트림)</text>
+
+  <!-- Kafka 엔진 -->
+  <rect x="232" y="56" width="160" height="64" rx="8" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.3" stroke-dasharray="5 3"/>
+  <text x="312" y="78" text-anchor="middle" fill="#8B8878" font-weight="700">① Kafka 엔진 테이블</text>
+  <text x="312" y="95" text-anchor="middle" fill="#8B8878" font-size="10.5" opacity="0.7">소비자 — 흘러갈 뿐</text>
+  <text x="312" y="110" text-anchor="middle" fill="#8B8878" font-size="10.5" opacity="0.7">저장·조회용 아님</text>
+  <line x1="174" y1="88" x2="226" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+  <text x="200" y="80" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">구독</text>
+
+  <!-- MV 펌프 -->
+  <rect x="450" y="56" width="90" height="64" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="495" y="82" text-anchor="middle" fill="#201F18" font-weight="700">② MV</text>
+  <text x="495" y="99" text-anchor="middle" fill="#201F18" font-size="10.5">펌프 (+변환)</text>
+  <line x1="392" y1="88" x2="444" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+  <text x="418" y="80" text-anchor="middle" font-size="10" fill="#D99E00" font-weight="700">계속 읽음</text>
+
+  <!-- 저장 테이블 -->
+  <rect x="576" y="56" width="84" height="64" rx="8" fill="#8B8878" fill-opacity="0.05" stroke="#8B8878" stroke-width="1.3"/>
+  <text x="618" y="82" text-anchor="middle" fill="#8B8878" font-weight="700">③ MergeTree</text>
+  <text x="618" y="99" text-anchor="middle" fill="#8B8878" font-size="10.5" opacity="0.7">실제 저장소</text>
+  <line x1="540" y1="88" x2="570" y2="88" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-kfk)"/>
+
+  <!-- 직접 조회 금지 -->
+  <text x="312" y="152" text-anchor="middle" font-size="12" fill="#8B8878" font-weight="700">✗ 직접 SELECT 금지</text>
+  <text x="312" y="170" text-anchor="middle" font-size="10.5" fill="#8B8878" opacity="0.7">읽는 순간 오프셋이 소모되어 데이터가 "사라진" 것처럼 보인다</text>
+
+  <text x="340" y="204" text-anchor="middle" fill="#8B8878" opacity="0.8" font-size="11.5">조회는 항상 ③에서. 소비 일시정지 = MV를 DETACH, 재개 = ATTACH (그 사이 데이터는 Kafka에 남아 있어 안전)</text>
+</svg>

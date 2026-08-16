@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -478,7 +502,67 @@ ORDER BY (event_type, event_time);   -- MergeTree는 ORDER BY가 사실상 필�
 <li>part가 쌓이면 백그라운드에서 여러 part를 <strong>병합(merge)</strong>해 더 큰 part 하나로 만든다 (이때도 정렬 유지).</li>
 <li>쿼리는 활성 part들을 병렬로 읽는다.</li>
 </ol>
-<p>직접 확인해 보자 (실측 결과):</p>
+<p>책상 위에 쌓이는 메모지를 상상하면 쉽다. 손님이 올 때마다(INSERT) 메모지 한 장을 책상에 올려두고(part), 한가할 때마다(백그라운드) 메모지들을 <strong>이름순으로 정리해 노트 한 권에 옮겨 적는다</strong>(merge). 이미 적은 메모지는 절대 고쳐 쓰지 않는다 — 정리할 때 새 노트를 만들 뿐이다. 이 "고쳐 쓰지 않는다"는 규칙 하나가 MergeTree의 장점(빠른 쓰기)과 약점(어려운 수정)을 전부 결정한다.</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 268" role="img" aria-label="INSERT 세 번이 각각 part 하나씩을 만들고, 백그라운드 merge가 세 part를 정렬을 유지한 채 하나로 합친다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-parts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+    </marker>
+    <marker id="arr-parts-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="150" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">① INSERT 1번 = part 1개</text>
+  <text x="520" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">② 백그라운드 merge</text>
+
+  <!-- INSERT 라벨 3개 -->
+  <g font-size="11.5" fill="currentColor">
+    <text x="30" y="66">INSERT (1, 'a')</text>
+    <text x="30" y="126">INSERT (2, 'b')</text>
+    <text x="30" y="186">INSERT (3, 'c')</text>
+  </g>
+  <g stroke="currentColor" stroke-width="1.3" marker-end="url(#arr-parts)">
+    <line x1="128" y1="62" x2="170" y2="62"/>
+    <line x1="128" y1="122" x2="170" y2="122"/>
+    <line x1="128" y1="182" x2="170" y2="182"/>
+  </g>
+
+  <!-- part 3개 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="176" y="44" width="128" height="36" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="176" y="104" width="128" height="36" rx="6" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="176" y="164" width="128" height="36" rx="6" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" fill="currentColor">
+    <text x="240" y="60" font-family="Menlo, monospace" font-size="11">all_1_1_0</text>
+    <text x="240" y="74" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+    <text x="240" y="120" font-family="Menlo, monospace" font-size="11">all_2_2_0</text>
+    <text x="240" y="134" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+    <text x="240" y="180" font-family="Menlo, monospace" font-size="11">all_3_3_0</text>
+    <text x="240" y="194" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+  </g>
+
+  <!-- merge 화살표 (셋 → 하나) -->
+  <g stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-parts-acc)">
+    <line x1="308" y1="62"  x2="424" y2="112"/>
+    <line x1="308" y1="122" x2="424" y2="122"/>
+    <line x1="308" y1="182" x2="424" y2="132"/>
+  </g>
+  <text x="368" y="98" text-anchor="middle" fill="#D99E00" font-size="11" font-weight="700">merge (정렬 유지)</text>
+
+  <!-- 합쳐진 part -->
+  <rect x="430" y="86" width="196" height="72" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="528" y="112" text-anchor="middle" font-family="Menlo, monospace" font-size="12" fill="#201F18" font-weight="700">all_1_3_1</text>
+  <text x="528" y="130" text-anchor="middle" font-size="11" fill="#201F18">3행 — 블록 1~3을 담은 레벨 1 part</text>
+  <text x="528" y="145" text-anchor="middle" font-size="10.5" fill="#201F18" opacity="0.8">(기존 part 셋은 비활성화 후 삭제)</text>
+
+  <text x="340" y="240" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="11.5">part는 한 번 쓰면 고치지 않는다(불변) → INSERT는 빠르지만 UPDATE는 어렵고,</text>
+  <text x="340" y="256" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="11.5">한 건씩 INSERT를 남발하면 part가 폭증한다 (그래서 "배치로 넣어라")</text>
+</svg>
+<figcaption>INSERT마다 part가 하나씩 만들어지고, 백그라운드 merge가 정렬을 유지하며 하나로 합친다 — part 이름의 숫자가 어느 블록을 담았는지 알려준다</figcaption></figure>
+<p>이 과정을 실제 SQL로 재현해 보자 (실측 결과):</p>
 <pre class="code" data-lang="sql"><code>CREATE TABLE events (id UInt32, msg String) ENGINE = MergeTree ORDER BY id;
 INSERT INTO events VALUES (1, &#x27;a&#x27;);   -- part 1 생성
 INSERT INTO events VALUES (2, &#x27;b&#x27;);   -- part 2 생성
@@ -499,20 +583,81 @@ WHERE table = &#x27;events&#x27; AND active;
 <p>이 구조에서 세 가지 성질이 따라 나온다:</p>
 <ul>
 <li><strong>INSERT가 빠르다</strong> — 기존 데이터를 건드리지 않고 새 조각만 쓴다</li>
-<li><strong>UPDATE/DELETE가 어렵다</strong> — part가 불변이므로, 수정하려면 part를 다시 써야 한다(16장)</li>
+<li><strong>UPDATE/DELETE가 어렵다</strong> — part가 불변이므로, 수정하려면 part를 다시 써야 한다(14장)</li>
 <li><strong>작은 INSERT를 남발하면 안 된다</strong> — part가 폭증해 "too many parts" 에러. 기본 한도(26.8 실측): 파티션당 <strong>1,000개부터 삽입 지연</strong>(parts_to_delay_insert), <strong>3,000개에서 차단</strong>(parts_to_throw_insert). <strong>수천~수만 행씩 묶어서 넣는 것</strong>이 원칙</li>
 </ul>
 <h2 id="s3">5.3 Sparse Primary Index — 10억 행을 1초에 찾는 비결</h2>
-<p>일반 DB의 인덱스는 "모든 행"의 위치를 기록한다(B-tree). ClickHouse는 다르다.</p>
+<p>일반 DB의 인덱스는 "모든 행"의 위치를 기록한다(B-tree). ClickHouse는 다르다. 비유하자면, 두꺼운 전화번호부에서 사람을 찾을 때 우리는 모든 이름을 훑지 않는다 — <strong>각 페이지의 첫 이름만 훑어서</strong> "이 페이지에 있겠구나"를 판단하고 그 페이지만 편다. ClickHouse의 primary index가 정확히 이 방식이다:</p>
 <ul>
-<li>part 안의 데이터는 <strong>granule(그래뉼)</strong>이라는 8,192행 단위 블록으로 나뉜다 (<code>index_granularity</code> 설정, 기본 8192)</li>
+<li>part 안의 데이터는 <strong>granule(그래뉼)</strong>이라는 8,192행 단위 블록으로 나뉜다 (<code>index_granularity</code> 설정, 기본 8192) — 전화번호부의 "페이지"에 해당</li>
 <li>primary index(<code>primary.idx</code>)에는 <strong>각 granule의 첫 행 값만</strong> 기록한다 → "sparse(희소)" 인덱스</li>
 <li>10억 행이어도 인덱스 엔트리는 12만 개뿐 → <strong>통째로 메모리에 상주</strong></li>
 </ul>
-<p>쿼리가 오면:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 330" role="img" aria-label="데이터는 8192행짜리 granule로 나뉘고, primary.idx는 granule마다 첫 값 하나만 기록한다. 쿼리는 이 작은 인덱스를 이진 탐색해 조건에 맞는 granule 하나만 디스크에서 읽는다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-sparse" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <!-- 쿼리 -->
+  <rect x="30" y="18" width="250" height="32" rx="6" fill="currentColor" fill-opacity="0.05" stroke="currentColor" stroke-width="1.2"/>
+  <text x="155" y="38" text-anchor="middle" font-family="Menlo, monospace" font-size="11.5" fill="currentColor">WHERE user_id = 42</text>
+
+  <!-- primary.idx -->
+  <text x="155" y="86" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">primary.idx (메모리 상주)</text>
+  <text x="155" y="102" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.65">granule마다 "첫 행의 키" 하나만 기록</text>
+  <g stroke="currentColor" stroke-width="1.1" font-family="Menlo, monospace">
+    <rect x="80" y="112" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="138" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="164" width="150" height="26" fill="#F2C230"/>
+    <rect x="80" y="190" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="80" y="216" width="150" height="26" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-family="Menlo, monospace" font-size="11">
+    <text x="155" y="129" fill="currentColor">granule 0 → 0</text>
+    <text x="155" y="155" fill="currentColor">granule 1 → 17</text>
+    <text x="155" y="181" fill="#201F18" font-weight="700">granule 2 → 34</text>
+    <text x="155" y="207" fill="currentColor">granule 3 → 51</text>
+    <text x="155" y="233" fill="currentColor">granule 4 → 68</text>
+  </g>
+  <!-- 이진 탐색 화살표 -->
+  <line x1="58" y1="54" x2="76" y2="116" stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-sparse)"/>
+  <text x="56" y="86" text-anchor="end" font-size="10.5" fill="#D99E00" font-weight="700">이진 탐색</text>
+  <text x="236" y="200" font-size="10.5" fill="#D99E00" font-weight="700">34 ≤ 42 &lt; 51</text>
+
+  <!-- 디스크의 granule들 -->
+  <text x="500" y="86" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">디스크의 컬럼 데이터 (part 내부)</text>
+  <text x="500" y="102" text-anchor="middle" font-size="10.5" fill="currentColor" opacity="0.65">granule = 8,192행 묶음 (index_granularity)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="390" y="112" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="138" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="164" width="220" height="26" fill="#F2C230"/>
+    <rect x="390" y="190" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="390" y="216" width="220" height="26" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="10.5">
+    <text x="500" y="129" fill="currentColor" opacity="0.55">granule 0 — 읽지 않음</text>
+    <text x="500" y="155" fill="currentColor" opacity="0.55">granule 1 — 읽지 않음</text>
+    <text x="500" y="181" fill="#201F18" font-weight="700">granule 2 — 이것만 읽음!</text>
+    <text x="500" y="207" fill="currentColor" opacity="0.55">granule 3 — 읽지 않음</text>
+    <text x="500" y="233" fill="currentColor" opacity="0.55">granule 4 — 읽지 않음</text>
+  </g>
+  <!-- idx → granule 화살표 -->
+  <line x1="234" y1="177" x2="384" y2="177" stroke="#D99E00" stroke-width="1.8" marker-end="url(#arr-sparse)"/>
+  <text x="309" y="170" text-anchor="middle" font-size="10.5" fill="#D99E00" font-weight="700">mark 파일이 위치 안내</text>
+
+  <text x="340" y="278" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">"모든 행"이 아니라 "granule의 첫 행"만 인덱싱 → 그래서 sparse(희소) 인덱스.</text>
+  <text x="340" y="296" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">10억 행이어도 엔트리는 10억 ÷ 8,192 ≈ 12만 개 → 인덱스 전체가 메모리에 들어간다.</text>
+  <text x="340" y="314" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">EXPLAIN indexes=1의 "Granules: 1/5"가 바로 이 그림의 결과다.</text>
+</svg>
+<figcaption>쿼리는 메모리의 작은 인덱스를 이진 탐색해 후보 granule을 고르고, 그 granule만 디스크에서 읽는다 — 나머지는 아예 읽지 않는다</figcaption></figure>
+<p>그림의 흐름을 단계로 옮기면:</p>
 <ol>
-<li>메모리의 sparse index를 <strong>이진 탐색</strong>해 조건에 걸릴 가능성이 있는 granule만 고른다</li>
+<li>메모리의 sparse index를 <strong>이진 탐색</strong>해 조건에 걸릴 가능성이 있는 granule만 고른다 (그림에서 "34 ≤ 42 &lt; 51"이므로 granule 2가 후보)</li>
 <li>고른 granule만 디스크에서 읽는다 (mark 파일 <code>.mrk</code>가 granule → 디스크 위치를 알려줌)</li>
+<li>읽은 8,192행 안에서 실제 조건에 맞는 행을 걸러낸다 — 8,192행쯤은 순식간이다</li>
 </ol>
 <p><code>EXPLAIN indexes = 1</code>로 직접 확인할 수 있다 (실측):</p>
 <pre class="code" data-lang="sql"><code>CREATE TABLE hits (user_id UInt32, url String, ts DateTime)

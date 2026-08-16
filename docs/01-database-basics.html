@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -502,19 +526,108 @@ pre.code::before {
 <p><strong>ClickHouse는 OLAP 데이터베이스다.</strong> 그래서 뒤에서 배우겠지만 "행 하나 고치기"는 어렵고 느린 대신, "10억 행 집계"는 노트북에서도 1초 안에 끝난다.</p>
 <h2 id="s6">1.4 컬럼 지향 저장 — ClickHouse가 빠른 이유</h2>
 <p>전통적 DB(MySQL 등)는 데이터를 <strong>행 단위</strong>로 디스크에 저장한다(row-oriented). ClickHouse는 <strong>열 단위</strong>로 저장한다(column-oriented). 이 차이가 속도의 핵심이다.</p>
-<p>위의 users 테이블이 디스크에 놓이는 모습:</p>
-<pre class="code" data-lang="text"><code>행 지향 (MySQL):
-[1, 김철수, 2026-01-15, KR] [2, Jane, 2026-02-20, US] [3, 田中, 2026-03-05, JP]
+<p>책장에 비유하면 이렇다. 행 지향은 "주문서 한 장 한 장"을 순서대로 꽂아둔 서류철이고, 열 지향은 주문서를 분해해서 <strong>"가격만 모은 파일", "날짜만 모은 파일"</strong>로 나눠 꽂아둔 서류철이다. "이번 달 평균 가격"을 구하라는 요청이 오면, 전자는 주문서를 전부 꺼내 가격 칸만 훑어야 하지만 후자는 가격 파일 하나만 꺼내면 끝난다.</p>
+<p>디스크 위에서 실제로 벌어지는 일을 그림으로 보자:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 332" role="img" aria-label="같은 테이블을 행 지향으로 저장하면 가격 하나를 집계해도 12칸 전부 읽지만, 열 지향으로 저장하면 가격 3칸만 읽는다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <!-- 쿼리 라벨 -->
+  <text x="340" y="22" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">SELECT sum(가격) FROM 주문  —  필요한 것은 "가격" 컬럼뿐</text>
 
-열 지향 (ClickHouse):
-user_id 파일:      [1, 2, 3]
-name 파일:         [김철수, Jane, 田中]
-signup_date 파일:  [2026-01-15, 2026-02-20, 2026-03-05]
-country 파일:      [KR, US, JP]</code></pre>
-<p>분석 쿼리 <code>SELECT count() FROM users WHERE country = 'KR'</code>을 실행하면:</p>
+  <!-- ===== 패널 A: 행 지향 ===== -->
+  <text x="30" y="62" font-weight="700" font-size="13" fill="currentColor">행 지향 (MySQL 등) — 행 단위로 이어 붙여 저장</text>
+  <!-- 12칸: 행1(id,이름,가격,날짜) 행2 행3 / 가격 = index 2,6,10 -->
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30"  y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="76"  y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="122" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="168" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="214" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="260" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="306" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="352" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="398" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="444" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="490" y="76" width="46" height="30" fill="#F2C230"/>
+    <rect x="536" y="76" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="11">
+    <text x="53"  y="95" fill="currentColor">id</text>
+    <text x="99"  y="95" fill="currentColor">이름</text>
+    <text x="145" y="95" fill="#201F18">가격</text>
+    <text x="191" y="95" fill="currentColor">날짜</text>
+    <text x="237" y="95" fill="currentColor">id</text>
+    <text x="283" y="95" fill="currentColor">이름</text>
+    <text x="329" y="95" fill="#201F18">가격</text>
+    <text x="375" y="95" fill="currentColor">날짜</text>
+    <text x="421" y="95" fill="currentColor">id</text>
+    <text x="467" y="95" fill="currentColor">이름</text>
+    <text x="513" y="95" fill="#201F18">가격</text>
+    <text x="559" y="95" fill="currentColor">날짜</text>
+  </g>
+  <!-- 행 구분 브레이스 -->
+  <g font-size="10" fill="currentColor" opacity="0.6" text-anchor="middle">
+    <text x="122" y="72">← 1번 행 →</text>
+    <text x="306" y="72">← 2번 행 →</text>
+    <text x="490" y="72">← 3번 행 →</text>
+  </g>
+  <!-- 읽기 범위 -->
+  <g stroke="currentColor" stroke-width="1.6">
+    <line x1="30" y1="120" x2="582" y2="120"/>
+    <line x1="30" y1="114" x2="30" y2="126"/>
+    <line x1="582" y1="114" x2="582" y2="126"/>
+  </g>
+  <text x="306" y="141" text-anchor="middle" fill="currentColor" font-weight="700">디스크에서 읽는 범위: 12칸 전부 (가격이 사이사이 끼어 있어 건너뛸 수 없다)</text>
+
+  <!-- ===== 패널 B: 열 지향 ===== -->
+  <text x="30" y="196" font-weight="700" font-size="13" fill="currentColor">열 지향 (ClickHouse) — 같은 컬럼끼리 모아 저장 (컬럼 = 파일 하나)</text>
+  <g stroke="currentColor" stroke-width="1.1">
+    <rect x="30"  y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="76"  y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="122" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="168" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="214" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="260" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="306" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="352" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="398" y="210" width="46" height="30" fill="#F2C230"/>
+    <rect x="444" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="490" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+    <rect x="536" y="210" width="46" height="30" fill="currentColor" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" font-size="11">
+    <text x="53"  y="229" fill="currentColor">id</text>
+    <text x="99"  y="229" fill="currentColor">id</text>
+    <text x="145" y="229" fill="currentColor">id</text>
+    <text x="191" y="229" fill="currentColor">이름</text>
+    <text x="237" y="229" fill="currentColor">이름</text>
+    <text x="283" y="229" fill="currentColor">이름</text>
+    <text x="329" y="229" fill="#201F18">가격</text>
+    <text x="375" y="229" fill="#201F18">가격</text>
+    <text x="421" y="229" fill="#201F18">가격</text>
+    <text x="467" y="229" fill="currentColor">날짜</text>
+    <text x="513" y="229" fill="currentColor">날짜</text>
+    <text x="559" y="229" fill="currentColor">날짜</text>
+  </g>
+  <g font-size="10" fill="currentColor" opacity="0.6" text-anchor="middle">
+    <text x="99"  y="206">id 파일</text>
+    <text x="237" y="206">이름 파일</text>
+    <text x="375" y="206">가격 파일</text>
+    <text x="513" y="206">날짜 파일</text>
+  </g>
+  <!-- 읽기 범위: 가격 그룹만 -->
+  <g stroke="#D99E00" stroke-width="2">
+    <line x1="306" y1="254" x2="444" y2="254"/>
+    <line x1="306" y1="248" x2="306" y2="260"/>
+    <line x1="444" y1="248" x2="444" y2="260"/>
+  </g>
+  <text x="375" y="275" text-anchor="middle" fill="#D99E00" font-weight="700">읽는 범위: 가격 3칸뿐</text>
+  <text x="340" y="308" text-anchor="middle" fill="currentColor" opacity="0.75" font-size="11.5">읽는 데이터 1/4 + 비슷한 값이 모여 있어 압축까지 극대화 — 이것이 ClickHouse가 빠른 이유의 절반이다</text>
+</svg>
+<figcaption>같은 테이블도 저장 방식에 따라 "읽어야 하는 디스크 범위"가 달라진다 — 분석 쿼리는 필요한 컬럼만 읽는 열 지향이 압도적으로 유리하다</figcaption></figure>
+<p>정리하면, 분석 쿼리 <code>SELECT sum(가격) ...</code>을 실행할 때:</p>
 <ul>
-<li><strong>행 지향</strong>: 모든 행의 모든 컬럼을 통째로 읽어야 한다 (country만 필요한데도)</li>
-<li><strong>열 지향</strong>: <code>country</code> 파일 <strong>하나만</strong> 읽으면 된다 → 읽는 데이터가 1/100 이하로 줄어든다</li>
+<li><strong>행 지향</strong>: 가격이 다른 컬럼들 사이사이에 끼어 있어 <strong>모든 행의 모든 컬럼</strong>을 읽게 된다</li>
+<li><strong>열 지향</strong>: <code>가격</code> 파일 <strong>하나만</strong> 읽으면 된다 → 컬럼이 100개인 테이블이라면 읽는 데이터가 1/100로 줄어든다</li>
 </ul>
 <p>여기에 두 가지 이점이 더해진다:</p>
 <ol>

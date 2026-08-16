@@ -1,0 +1,57 @@
+<svg viewBox="0 0 680 268" role="img" aria-label="INSERT 세 번이 각각 part 하나씩을 만들고, 백그라운드 merge가 세 part를 정렬을 유지한 채 하나로 합친다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <defs>
+    <marker id="arr-parts" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8B8878"/>
+    </marker>
+    <marker id="arr-parts-acc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#D99E00"/>
+    </marker>
+  </defs>
+
+  <text x="150" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="#8B8878">① INSERT 1번 = part 1개</text>
+  <text x="520" y="26" text-anchor="middle" font-weight="700" font-size="13" fill="#8B8878">② 백그라운드 merge</text>
+
+  <!-- INSERT 라벨 3개 -->
+  <g font-size="11.5" fill="#8B8878">
+    <text x="30" y="66">INSERT (1, 'a')</text>
+    <text x="30" y="126">INSERT (2, 'b')</text>
+    <text x="30" y="186">INSERT (3, 'c')</text>
+  </g>
+  <g stroke="#8B8878" stroke-width="1.3" marker-end="url(#arr-parts)">
+    <line x1="128" y1="62" x2="170" y2="62"/>
+    <line x1="128" y1="122" x2="170" y2="122"/>
+    <line x1="128" y1="182" x2="170" y2="182"/>
+  </g>
+
+  <!-- part 3개 -->
+  <g stroke="#8B8878" stroke-width="1.2">
+    <rect x="176" y="44" width="128" height="36" rx="6" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="176" y="104" width="128" height="36" rx="6" fill="#8B8878" fill-opacity="0.05"/>
+    <rect x="176" y="164" width="128" height="36" rx="6" fill="#8B8878" fill-opacity="0.05"/>
+  </g>
+  <g text-anchor="middle" fill="#8B8878">
+    <text x="240" y="60" font-family="Menlo, monospace" font-size="11">all_1_1_0</text>
+    <text x="240" y="74" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+    <text x="240" y="120" font-family="Menlo, monospace" font-size="11">all_2_2_0</text>
+    <text x="240" y="134" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+    <text x="240" y="180" font-family="Menlo, monospace" font-size="11">all_3_3_0</text>
+    <text x="240" y="194" font-size="10.5" opacity="0.7">1행 · 정렬됨 · 불변</text>
+  </g>
+
+  <!-- merge 화살표 (셋 → 하나) -->
+  <g stroke="#D99E00" stroke-width="1.6" marker-end="url(#arr-parts-acc)">
+    <line x1="308" y1="62"  x2="424" y2="112"/>
+    <line x1="308" y1="122" x2="424" y2="122"/>
+    <line x1="308" y1="182" x2="424" y2="132"/>
+  </g>
+  <text x="368" y="98" text-anchor="middle" fill="#D99E00" font-size="11" font-weight="700">merge (정렬 유지)</text>
+
+  <!-- 합쳐진 part -->
+  <rect x="430" y="86" width="196" height="72" rx="8" fill="#F2C230" stroke="#D99E00" stroke-width="1.4"/>
+  <text x="528" y="112" text-anchor="middle" font-family="Menlo, monospace" font-size="12" fill="#201F18" font-weight="700">all_1_3_1</text>
+  <text x="528" y="130" text-anchor="middle" font-size="11" fill="#201F18">3행 — 블록 1~3을 담은 레벨 1 part</text>
+  <text x="528" y="145" text-anchor="middle" font-size="10.5" fill="#201F18" opacity="0.8">(기존 part 셋은 비활성화 후 삭제)</text>
+
+  <text x="340" y="240" text-anchor="middle" fill="#8B8878" opacity="0.75" font-size="11.5">part는 한 번 쓰면 고치지 않는다(불변) → INSERT는 빠르지만 UPDATE는 어렵고,</text>
+  <text x="340" y="256" text-anchor="middle" fill="#8B8878" opacity="0.75" font-size="11.5">한 건씩 INSERT를 남발하면 part가 폭증한다 (그래서 "배치로 넣어라")</text>
+</svg>

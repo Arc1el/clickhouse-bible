@@ -334,6 +334,30 @@ pre.code::before {
 }
 .chapter summary { cursor: pointer; font-weight: 700; }
 
+/* ---- 다이어그램 ---- */
+figure.diagram {
+  margin: 1.6rem 0;
+  padding: 1.2rem 1rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow-x: auto;
+}
+figure.diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  min-width: 560px;
+  margin: 0 auto;
+}
+figure.diagram figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.7rem;
+  min-width: 560px;
+}
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -523,6 +547,48 @@ CREATE TABLE logs (
 ALTER TABLE logs ADD INDEX level_idx level TYPE set(100) GRANULARITY 4;
 ALTER TABLE logs MATERIALIZE INDEX level_idx SETTINGS mutations_sync = 1;  -- 기존 데이터 적용</code></pre>
 <p><code>GRANULARITY 4</code> = granule 4개(= 32,768행) 묶음마다 요약 하나. (primary index의 index_granularity와 다른 개념이니 혼동 주의)</p>
+<p>동작 방식을 minmax 인덱스로 그려보면 이렇다 — 포인트는 인덱스가 답을 "찾아주는" 것이 아니라, 요약만 보고 <strong>"여기엔 답이 없다"가 증명되는 구간을 읽기에서 면제</strong>해 준다는 것:</p>
+<figure class="diagram">
+<svg viewBox="0 0 680 268" role="img" aria-label="minmax skipping index는 granule 묶음마다 최솟값과 최댓값 요약을 저장한다. WHERE price > 180 쿼리는 요약만 보고 max가 180 이하인 구간을 통째로 건너뛴다" font-family="'Apple SD Gothic Neo', Pretendard, 'Noto Sans KR', sans-serif" font-size="12">
+  <text x="340" y="24" text-anchor="middle" font-weight="700" font-size="13" fill="currentColor">WHERE price > 180  —  minmax skipping index의 판단 과정</text>
+
+  <!-- 4개 블록 -->
+  <g stroke="currentColor" stroke-width="1.2">
+    <rect x="30"  y="70" width="140" height="86" rx="8" fill="currentColor" fill-opacity="0.03"/>
+    <rect x="190" y="70" width="140" height="86" rx="8" fill="currentColor" fill-opacity="0.03"/>
+    <rect x="350" y="70" width="140" height="86" rx="8" fill="#F2C230"/>
+    <rect x="510" y="70" width="140" height="86" rx="8" fill="#F2C230"/>
+  </g>
+
+  <!-- 요약 태그 -->
+  <g font-family="Menlo, monospace" font-size="11" text-anchor="middle" font-weight="700">
+    <text x="100" y="60" fill="currentColor">min 10 · max 95</text>
+    <text x="260" y="60" fill="currentColor">min 40 · max 170</text>
+    <text x="420" y="60" fill="#D99E00">min 90 · max 260</text>
+    <text x="580" y="60" fill="#D99E00">min 200 · max 480</text>
+  </g>
+
+  <!-- 블록 내용 -->
+  <g text-anchor="middle" font-size="11">
+    <text x="100" y="105" fill="currentColor" opacity="0.55">granule 4개 묶음</text>
+    <text x="100" y="126" fill="currentColor" font-weight="700" font-size="15">✗ 건너뜀</text>
+    <text x="100" y="144" fill="currentColor" opacity="0.55">max 95 &lt; 180</text>
+    <text x="260" y="105" fill="currentColor" opacity="0.55">granule 4개 묶음</text>
+    <text x="260" y="126" fill="currentColor" font-weight="700" font-size="15">✗ 건너뜀</text>
+    <text x="260" y="144" fill="currentColor" opacity="0.55">max 170 &lt; 180</text>
+    <text x="420" y="105" fill="#201F18" opacity="0.7">granule 4개 묶음</text>
+    <text x="420" y="126" fill="#201F18" font-weight="700" font-size="15">읽음</text>
+    <text x="420" y="144" fill="#201F18" opacity="0.7">180이 있을 수도</text>
+    <text x="580" y="105" fill="#201F18" opacity="0.7">granule 4개 묶음</text>
+    <text x="580" y="126" fill="#201F18" font-weight="700" font-size="15">읽음</text>
+    <text x="580" y="144" fill="#201F18" opacity="0.7">전부 후보</text>
+  </g>
+
+  <text x="340" y="192" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">인덱스가 "여기 답이 있다"를 찾아주는 게 아니라, <tspan font-weight="700">"여기엔 답이 없다"를 증명해 읽기를 면제</tspan>해 준다.</text>
+  <text x="340" y="212" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">GRANULARITY 4 = granule 4개(32,768행) 묶음마다 요약 하나. 값이 디스크 위에서 몰려 있을수록 잘 작동하고,</text>
+  <text x="340" y="230" text-anchor="middle" fill="currentColor" opacity="0.8" font-size="11.5">모든 구간에 값이 골고루 흩어져 있으면 하나도 건너뛰지 못한다 (그때는 projection이나 bloom_filter를 검토).</text>
+</svg>
+<figcaption>minmax 인덱스는 구간 요약(min·max)만 보고 조건에 맞을 수 없는 구간을 통째로 건너뛴다</figcaption></figure>
 <h3 id="s7">종류별 선택 기준 (시험은 set과 minmax를 명시)</h3>
 <div class="tablewrap"><table><thead><tr><th>타입</th><th>저장하는 요약</th><th>잘 맞는 경우</th></tr></thead><tbody><tr><td><code>minmax</code></td><td>구간의 최솟값·최댓값</td><td>ORDER BY와 <strong>느슨하게 상관된</strong> 숫자/시간 (예: 시간순 테이블의 다른 타임스탬프 컬럼, 단조 증가 ID)</td></tr><tr><td><code>set(N)</code></td><td>구간의 고유값 집합 (최대 N개)</td><td><strong>구간별로 값 종류가 적은</strong> 컬럼 (지역별로 몰려 있는 카테고리 등). N 초과 구간은 스킵 불가</td></tr><tr><td><code>bloom_filter([오탐률])</code></td><td>값 존재 여부 확률 필터</td><td>고카디널리티 등가 비교 (<code>= 'x'</code>, <code>IN</code>)</td></tr><tr><td><code>tokenbf_v1(크기, 해시수, 시드)</code></td><td>토큰(단어) bloom filter</td><td>로그 텍스트의 단어 검색 (<code>hasToken</code>) — ⚠️ deprecated</td></tr><tr><td><code>ngrambf_v1(n, 크기, 해시수, 시드)</code></td><td>n-gram bloom filter</td><td>부분 문자열 LIKE '%...%' 검색 — ⚠️ deprecated</td></tr><tr><td><code>text(tokenizer = ...)</code></td><td>전문(full-text) 역색인</td><td><strong>26.2부터 정식(GA)</strong> — 텍스트 검색의 현행 권장</td></tr></tbody></table></div>
 <blockquote>
