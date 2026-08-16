@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>0장 · ClickHouse Certified Developer 시험 완전 안내 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a class="active" href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a class="active" href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>0장. ClickHouse Certified Developer 시험 완전 안내</h1>
+<blockquote>
+<p>최종 확인: 2026년 8월 16일, 출처: <a href="https://clickhouse.com/learn/certification">clickhouse.com/learn/certification</a></p>
+</blockquote>
+<h2 id="s1">0.1 이 자격증은 무엇인가</h2>
+<p><strong>ClickHouse Certified Developer</strong>는 ClickHouse, Inc.가 운영하는 유일한 공식 자격증이다. 객관식 시험이 아니라 <strong>실기(hands-on) 시험</strong>이다. 실제 ClickHouse 환경에 접속해서 테이블을 만들고, 데이터를 넣고, 쿼리를 짜는 <strong>과제 10~12개</strong>를 직접 수행한다.</p>
+<p>합격하면 Credly 디지털 배지가 발급되며, <strong>유효기간은 없다</strong> ("Once certified, always certified").</p>
+<h2 id="s2">0.2 시험 개요 한눈에 보기</h2>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td>형식</td><td>실기(performance-based) — 실제 클러스터에서 과제 수행</td></tr><tr><td>플랫폼</td><td>HackerRank (브라우저 기반)</td></tr><tr><td>시간</td><td>2시간 (환경 준비 포함 약 2시간 10~15분)</td></tr><tr><td>과제 수</td><td>10~12개 (과제별 배점 다름)</td></tr><tr><td>합격 기준</td><td><strong>70% 이상</strong> (자동 채점 + 수동 검토 병행)</td></tr><tr><td>결과 통지</td><td>최대 5영업일</td></tr><tr><td>비용</td><td><strong>$200 USD</strong> / 1회 응시 (환불 불가)</td></tr><tr><td>재응시</td><td>횟수 무제한, 단 직전 응시 후 <strong>7일 대기</strong>, 매회 $200</td></tr><tr><td>응시 기한</td><td>구매 후 <strong>365일 이내</strong> 아무 때나 응시 가능</td></tr><tr><td>사전 요건</td><td>없음 (권장: 무료 공식 교육 "Real-time Analytics with ClickHouse")</td></tr><tr><td>자격 유효기간</td><td>없음 (영구)</td></tr></tbody></table></div>
+<h3 id="s3">시험 환경 요구사항과 규정</h3>
+<ul>
+<li>작동하는 <strong>웹캠 필수</strong> (AI 프록터링 — 시험 내내 동일인인지 확인)</li>
+<li>조명이 밝은 조용한 공간</li>
+<li><strong>외부 모니터 사용 불가</strong></li>
+<li><strong>시험 중 clickhouse.com 도메인 전체 열람 허용</strong> (공식 문서 + 블로그 + 아티클) ← 매우 중요!</li>
+<li>⚠️ <strong>AI 도구는 전면 금지</strong> — 문서 사이트에 내장된 "Ask AI" 기능도 시험 중에는 쓰면 안 된다. 과제별로 화면이 녹화되며, AI 생성 답안 탐지도 수행된다</li>
+</ul>
+<blockquote>
+<p>💡 문서 열람이 허용되므로, 문법을 통째로 암기하는 것보다</p>
+<p><strong>"어떤 기능이 존재하는지 알고, 문서에서 빨리 찾는 능력"</strong>이 훨씬 중요하다.</p>
+<p>이 바이블의 목표도 정확히 그것이다.</p>
+</blockquote>
+<h2 id="s4">0.3 시험 범위 (공식 Exam Objectives)</h2>
+<p>공식 페이지에 명시된 5개 영역이다. 이 바이블의 구성도 이 순서를 따른다.</p>
+<h3 id="s5">영역 1 — 데이터 모델링 (Modeling data)</h3>
+<ul>
+<li>새 데이터베이스 생성</li>
+<li>요구 조건/파일 형식에 맞는 테이블 생성</li>
+<li>컬럼에 <strong>효율적인 데이터 타입</strong> 선택 (가장 작은 타입 고르기)</li>
+<li>쿼리 패턴에 맞는 <strong>MergeTree Primary Key</strong> 정의</li>
+<li><strong>Dictionary</strong> 정의 및 조회</li>
+</ul>
+<p>→ 이 책의 4~8장</p>
+<h3 id="s6">영역 2 — 데이터 삽입 (Inserting data)</h3>
+<ul>
+<li>로컬 파일을 테이블에 삽입</li>
+<li>클라우드 스토리지(S3 등)의 파일을 테이블에 삽입</li>
+<li><strong>Parquet, CSV, TSV</strong> 파일 삽입</li>
+<li><strong>삽입 중 컬럼 변환</strong> (이름 변경, 타입 변환, 계산)</li>
+<li>테이블 간 데이터 복사</li>
+</ul>
+<p>→ 이 책의 9장</p>
+<h3 id="s7">영역 3 — 데이터 분석 (Analyzing data)</h3>
+<ul>
+<li>조건에 맞는 SELECT 쿼리 작성</li>
+<li>일반 함수 사용 (부분 문자열 검색, 타임스탬프 변환 등)</li>
+<li>집계 함수 사용 (max/min/sum/avg, 고유값 개수, 분위수 등)</li>
+<li><strong>GROUP BY</strong>로 시간 단위/그룹 단위 집계</li>
+</ul>
+<p>→ 이 책의 10~12장</p>
+<h3 id="s8">영역 4 — 쿼리 성능 최적화 (Optimizing query performance)</h3>
+<ul>
+<li>비집계 쿼리 결과의 <strong>Materialized View</strong> 정의</li>
+<li><strong>AggregatingMergeTree / SummingMergeTree</strong>에 집계 결과 저장</li>
+<li>테이블 <strong>Projection</strong> 정의</li>
+<li><strong>set / minmax skipping index</strong> 정의</li>
+</ul>
+<p>→ 이 책의 13~15장</p>
+<h3 id="s9">영역 5 — 중복 제거와 변경 (Deduplication and mutations)</h3>
+<ul>
+<li><strong>Lightweight DELETE</strong> 수행</li>
+<li><strong>ReplacingMergeTree</strong>를 이용한 upsert 전략</li>
+<li><strong>CollapsingMergeTree</strong>를 이용한 빈번한 업데이트 전략</li>
+</ul>
+<p>→ 이 책의 16장</p>
+<h2 id="s10">0.4 응시 절차</h2>
+<ol>
+<li><a href="https://clickhouse.com/learn/certification">clickhouse.com/learn/certification</a> 접속</li>
+<li>응시권 구매 ($200) → 365일 내 아무 때나 응시 가능</li>
+<li>HackerRank 링크로 시험 시작 (예약 불필요, 24/7 가능)</li>
+<li>웹캠·환경 확인 (플랫폼 안내에 따를 것) → 2시간 실기</li>
+<li>최대 5영업일 내 결과 메일 수신 → 합격 시 Credly 배지 발급</li>
+</ol>
+<h2 id="s11">0.5 공식 권장 학습 자료</h2>
+<div class="tablewrap"><table><thead><tr><th>자료</th><th>내용</th><th>비용</th></tr></thead><tbody><tr><td><a href="https://clickhouse.com/learn/real-time-analytics">Real-time Analytics with ClickHouse</a></td><td>시험 범위 전체를 다루는 공식 교육. On-demand(녹화) 또는 강사 주도(라이브)</td><td><strong>무료</strong></td></tr><tr><td><a href="https://clickhouse.com/learn">ClickHouse Academy</a></td><td>주제별 무료 온라인 코스 모음</td><td>무료</td></tr><tr><td><a href="https://clickhouse.com/docs">공식 문서</a></td><td>시험 중에도 열람 가능. 구조를 미리 익혀둘 것</td><td>무료</td></tr><tr><td><a href="https://clickhouse.com/docs/getting-started/example-datasets">Example Datasets</a></td><td>실습용 공개 데이터셋 (UK 부동산, NYC 택시 등)</td><td>무료</td></tr></tbody></table></div>
+<h2 id="s12">0.6 학습 로드맵 (지식 0에서 합격까지)</h2>
+<p>DB를 한 번도 다뤄본 적 없는 사람 기준, <strong>하루 1~2시간씩 4주</strong> 플랜이다. (참고: 공개된 합격 후기들의 실제 준비 기간은 6~8주가 많았다 — 이 플랜은 빡빡한 편이니, 여유가 있다면 각 주차를 1.5주로 늘려 잡아도 좋다.)</p>
+<div class="tablewrap"><table><thead><tr><th>주차</th><th>목표</th><th>해당 장</th></tr></thead><tbody><tr><td>1주차</td><td>DB 개념 + 실습 환경 구축 + SQL 첫걸음 + 데이터 타입</td><td>1~4장</td></tr><tr><td>2주차</td><td>MergeTree 완전 이해 + 테이블 설계 + Dictionary + 데이터 삽입</td><td>5~9장</td></tr><tr><td>3주차</td><td>SELECT 심화 + 함수 + 집계 + Materialized View</td><td>10~14장</td></tr><tr><td>4주차</td><td>성능 최적화 + 중복 제거 + 모의 과제 반복</td><td>15~17장, 19~20장</td></tr></tbody></table></div>
+<p>각 장의 예시는 <strong>전부 복사해서 바로 실행 가능</strong>하며, 이 저장소에 있는 <code>./clickhouse local</code> (v26.8) 로 검증되었다. 읽지만 말고 반드시 직접 실행할 것 — 실기 시험이므로 손이 기억해야 한다.</p>
+</article>
+<nav class="pagenav" aria-label="장 이동"><span></span><a class="pn next" href="01-database-basics.html"><span class="pn-label">다음 →</span><span class="pn-title">1장 · 데이터베이스 첫걸음</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

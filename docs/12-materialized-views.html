@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>12장 · Materialized View — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a class="active" href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a class="active" href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>12장. Materialized View — 시험 영역 4의 주인공</h1>
+<blockquote>
+<p>"같은 집계를 매번 다시 계산하지 말고, 미리 계산해 둬라."</p>
+<p>Materialized View(이하 MV)는 ClickHouse 성능 최적화의 첫 번째 도구이며,</p>
+<p>시험 영역 4("Optimizing query performance")의 중심이다.</p>
+</blockquote>
+<h2 id="s1">12.1 본질: MV는 "INSERT 트리거"다</h2>
+<p>이름 때문에 오해하기 쉽다. ClickHouse의 MV는 "저장된 뷰"가 아니라 <strong>"원본 테이블에 INSERT가 일어날 때마다 실행되어, 그 결과를 다른 테이블에 쓰는 트리거"</strong>다.</p>
+<pre class="code" data-lang="text"><code>INSERT → [원본 테이블] ─(신규 블록만)→ [MV의 SELECT 실행] → [대상 테이블에 INSERT]</code></pre>
+<p>세 가지 결정적 성질이 여기서 나온다:</p>
+<ol>
+<li><strong>생성 이후의 INSERT에만 반응한다.</strong> 이미 있던 데이터는 반영되지 않는다 (백필 필요)</li>
+<li>원본을 <strong>다시 읽지 않는다.</strong> 방금 들어온 블록만 SELECT의 입력이 된다 → 비용이 거의 0</li>
+<li>원본이 아니라 <strong>"INSERT 스트림"에 붙는 것</strong>이므로, MV의 SELECT에서 JOIN을 하면 <strong>왼쪽(원본) 테이블 INSERT에만</strong> 트리거된다 — 오른쪽 테이블 변경은 무시</li>
+</ol>
+<p>일반 View와 비교:</p>
+<div class="tablewrap"><table><thead><tr><th></th><th>일반 View</th><th>Materialized View</th></tr></thead><tbody><tr><td>저장</td><td>안 함 (쿼리 별칭일 뿐)</td><td>대상 테이블에 실제 저장</td></tr><tr><td>시점</td><td>조회할 때마다 원본 재계산</td><td>INSERT 시점에 미리 계산</td></tr><tr><td>용도</td><td>쿼리 재사용/가독성</td><td><strong>성능 최적화</strong></td></tr></tbody></table></div>
+<h2 id="s2">12.2 표준 문법 — TO 방식 (권장)</h2>
+<pre class="code" data-lang="sql"><code>-- ① 대상(target) 테이블을 먼저, 명시적으로 만든다
+CREATE TABLE purchases (
+    event_time DateTime,
+    user_id    UInt32,
+    page_url   String
+) ENGINE = MergeTree
+ORDER BY event_time;
+
+-- ② MV를 대상 테이블에 연결(TO)한다
+CREATE MATERIALIZED VIEW purchases_mv
+TO purchases AS
+SELECT event_time, user_id, page_url
+FROM events
+WHERE event_type = &#x27;purchase&#x27;;</code></pre>
+<p><code>TO</code> 없이 만들면 <code>.inner_id.&lt;uuid&gt;</code> 형태의 숨은 테이블이 자동 생성되는데(내포 방식), 관리가 불편하고 <strong>MV를 DROP하면 내포 테이블과 데이터까지 같이 사라진다.</strong> 그래서 <strong>실무·시험 모두 TO 방식이 표준</strong>이다 (TO 방식은 MV를 지워도 대상 테이블 유지).</p>
+<h3 id="s3">기존 데이터 채우기 (백필)</h3>
+<p>MV는 생성 이후만 반영하므로, 기존 데이터는 직접 넣는다. 그런데 "MV 생성"과 "수동 INSERT" 사이에 새 데이터가 들어오면 중복(또는 순서를 바꾸면 누락)이 생긴다. 공식 가이드의 표준은 <strong>경계 시각</strong>을 정해 두 경로를 나누는 것이다:</p>
+<pre class="code" data-lang="sql"><code>-- ① MV에 미래의 경계 시각 이후만 처리하도록 필터를 건다
+CREATE MATERIALIZED VIEW purchases_mv TO purchases AS
+SELECT event_time, user_id, page_url FROM events
+WHERE event_type = &#x27;purchase&#x27; AND event_time &gt;= &#x27;2026-08-16 10:00:00&#x27;;
+
+-- ② 경계 이전 구간만 수동 백필 → 중복도 누락도 없다
+INSERT INTO purchases
+SELECT event_time, user_id, page_url FROM events
+WHERE event_type = &#x27;purchase&#x27; AND event_time &lt; &#x27;2026-08-16 10:00:00&#x27;;</code></pre>
+<p>(대상이 AggregatingMergeTree라면 백필 SELECT에도 <code>-State</code>를 써야 한다.)</p>
+<p><code>POPULATE</code> 옵션은 버전에 따라 동작이 다르다 — <strong>26.8부터는 <code>TO ... POPULATE</code>가 허용되고 population 중 동시 INSERT도 정확히 한 번 전달</strong>되도록 개선되었지만(26.8 실측 동작 확인), <strong>26.7 이하(현행 LTS 포함)에서는 TO와 함께 쓰면 문법 오류</strong>이고 유실 가능성도 있다. 어느 버전에서나 통하는 안전한 방법은 위의 경계 백필이다.</p>
+<h2 id="s4">12.3 비집계 MV — 필터·변환 (시험 유형 그대로)</h2>
+<p>시험 문구: "define materialized view of <strong>non-aggregated</strong> query results". 위 12.2의 purchases_mv가 정확히 그것이다. 다른 흔한 용도:</p>
+<pre class="code" data-lang="sql"><code>-- 원본과 다른 정렬 순서의 사본 유지 (다른 쿼리 패턴 지원)
+CREATE TABLE events_by_user (
+    user_id UInt32, event_time DateTime, event_type LowCardinality(String), url String
+) ENGINE = MergeTree
+ORDER BY (user_id, event_time);          -- 원본은 (event_type, event_time)
+
+CREATE MATERIALIZED VIEW events_by_user_mv TO events_by_user AS
+SELECT user_id, event_time, event_type, url FROM events;</code></pre>
+<p>⚠️ <strong>컬럼 이름 일치 규칙</strong>: MV의 SELECT 결과 컬럼명(별칭 포함)이 대상 테이블 컬럼명과 일치해야 한다. 위치가 아니라 <strong>이름으로</strong> 매칭된다. 계산식에는 반드시 <code>AS 대상컬럼명</code>을 붙일 것 — MV가 소리 없이 기본값을 넣는 사고의 최다 원인이다.</p>
+<h2 id="s5">12.4 집계 MV ① — SummingMergeTree</h2>
+<p>합계만 필요하면 가장 간단한 조합:</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE daily_revenue (
+    day     Date,
+    product LowCardinality(String),
+    qty     UInt64,
+    revenue UInt64
+) ENGINE = SummingMergeTree((qty, revenue))   -- 이 컬럼들을 merge 때 합산
+ORDER BY (day, product);                      -- 나머지 컬럼(키)이 같은 행끼리
+
+CREATE MATERIALIZED VIEW daily_revenue_mv TO daily_revenue AS
+SELECT
+    toDate(event_time) AS day,
+    product,
+    qty,
+    price * qty AS revenue
+FROM orders;</code></pre>
+<p>⚠️ <strong>merge는 "언젠가" 일어난다.</strong> merge 전에는 같은 키의 행이 여러 개 존재할 수 있으므로, 조회는 <strong>항상 GROUP BY + sum으로</strong> 한다 (실측으로 확인된 동작):</p>
+<pre class="code" data-lang="sql"><code>SELECT day, product, sum(qty) AS qty, sum(revenue) AS revenue
+FROM daily_revenue
+GROUP BY day, product;</code></pre>
+<h2 id="s6">12.5 집계 MV ② — AggregatingMergeTree + State/Merge ★★★</h2>
+<p>합계 이외의 집계(고유 수, 평균, 분위수)는 "중간 상태(state)"를 저장해야 한다. <strong>시험 영역 4의 핵심 문형이다.</strong> 전체 흐름(26.8 검증):</p>
+<pre class="code" data-lang="sql"><code>-- ① 원본
+CREATE TABLE events (
+    ts      DateTime,
+    user_id UInt32,
+    revenue Decimal(18,2)
+) ENGINE = MergeTree ORDER BY ts;
+
+-- ② 대상 테이블: 집계 &quot;상태&quot;를 담는 특수 타입
+CREATE TABLE daily_stats (
+    day           Date,
+    users         AggregateFunction(uniq, UInt32),          -- uniq의 중간 상태
+    total_revenue SimpleAggregateFunction(sum, Decimal(38,2)) -- ⚠️ sum(Decimal(18,2))의 결과 타입은 (38,2)
+) ENGINE = AggregatingMergeTree
+ORDER BY day;                                               -- MV의 GROUP BY와 일치!
+
+-- ③ MV: -State 접미사로 &quot;상태&quot;를 저장
+CREATE MATERIALIZED VIEW daily_stats_mv TO daily_stats AS
+SELECT
+    toDate(ts)         AS day,
+    uniqState(user_id) AS users,          -- uniq → uniqState
+    sum(revenue)       AS total_revenue   -- SimpleAggregateFunction은 그냥 sum
+FROM events
+GROUP BY day;
+
+-- ④ 조회: -Merge 접미사로 상태를 최종값으로 합침
+SELECT
+    day,
+    uniqMerge(users)   AS unique_users,   -- uniqState로 쓴 것은 uniqMerge로 읽는다
+    sum(total_revenue) AS revenue
+FROM daily_stats
+GROUP BY day
+ORDER BY day;
+-- 2026-08-01 | 2 | 15.5
+-- 2026-08-02 | 1 | 7.25</code></pre>
+<p>암기 공식:</p>
+<div class="tablewrap"><table><thead><tr><th>단계</th><th>문법</th></tr></thead><tbody><tr><td>저장 타입</td><td><code>AggregateFunction(집계함수, 인자타입...)</code></td></tr><tr><td>쓰기(MV)</td><td><code>집계함수State(...)</code></td></tr><tr><td>읽기</td><td><code>집계함수Merge(...)</code> + GROUP BY</td></tr></tbody></table></div>
+<p>대표 쌍: <code>uniqState/uniqMerge</code>, <code>avgState/avgMerge</code>, <code>countState/countMerge</code>, <code>argMaxState/argMaxMerge</code>. ⚠️ 파라미터형 함수는 <strong>Merge 쪽에도 같은 파라미터</strong>를 반복해야 한다 (26.8 실측): <code>quantilesState(0.5, 0.9)(x)</code> → <code>quantilesMerge(0.5, 0.9)(col)</code>. 빠뜨리면 <code>NUMBER_OF_ARGUMENTS_DOESNT_MATCH</code> 에러.</p>
+<h3 id="s7">SimpleAggregateFunction vs AggregateFunction</h3>
+<div class="tablewrap"><table><thead><tr><th></th><th>SimpleAggregateFunction</th><th>AggregateFunction</th></tr></thead><tbody><tr><td>조건</td><td>부분값끼리 그냥 합치면 되는 함수</td><td>중간 상태가 필요한 함수</td></tr><tr><td>해당 함수</td><td>sum, min, max, any 등</td><td><strong>uniq, avg, quantile, argMax</strong> 등</td></tr><tr><td>쓰기</td><td>일반 함수 그대로 (<code>sum(x)</code>)</td><td><code>xxxState(...)</code> 필수</td></tr><tr><td>읽기</td><td>일반 함수 그대로 (<code>sum(col)</code>)</td><td><code>xxxMerge(col)</code> 필수</td></tr><tr><td>저장 효율</td><td>값 그대로 (작고 사람이 읽을 수 있음)</td><td>바이너리 상태</td></tr></tbody></table></div>
+<blockquote>
+<p>avg가 Simple이 안 되는 이유: 부분 평균 2개를 다시 평균 내면 틀린다</p>
+<p>(합계와 개수를 따로 보관해야 함 → 상태가 필요).</p>
+</blockquote>
+<h3 id="s8">자주 나오는 규칙 두 가지</h3>
+<ol>
+<li><strong>대상 테이블의 ORDER BY = MV의 GROUP BY 키.</strong> 그래야 merge 때 같은 그룹끼리 합쳐진다.</li>
+<li>Decimal 합계처럼 <strong>집계 결과 타입이 원본 타입과 다를 수 있다</strong> — 에러 메시지를 읽고 대상 컬럼 타입을 맞춰라 (<code>sum(Decimal(18,2))</code> → <code>Decimal(38,2)</code>, 실측 확인).</li>
+</ol>
+<h2 id="s9">12.6 Refreshable MV — 주기 재계산형 (신형)</h2>
+<p>일반 MV가 못 하는 것(전체 재계산, JOIN 양쪽 반영, 주기적 스냅샷)을 담당하는 <strong>완전히 다른 종류의 MV</strong>다. 트리거가 아니라 "cron처럼 주기 실행되는 INSERT SELECT".</p>
+<pre class="code" data-lang="sql"><code>CREATE MATERIALIZED VIEW daily_summary
+REFRESH EVERY 1 HOUR                 -- 매시간 전체 재계산
+ENGINE = MergeTree ORDER BY total
+AS SELECT sum(x) AS total FROM src;
+
+-- 수동 갱신/대기 및 상태 확인 (26.8 검증)
+SYSTEM REFRESH VIEW daily_summary;
+SYSTEM WAIT VIEW daily_summary;
+SELECT view, status, last_success_time FROM system.view_refreshes;</code></pre>
+<ul>
+<li><code>REFRESH EVERY 1 HOUR OFFSET 10 MINUTE</code>, <code>REFRESH AFTER 30 MINUTE</code>(간격형), <code>APPEND</code>(교체 대신 추가), <code>EMPTY</code>(생성 직후의 최초 리프레시 생략), <code>DEPENDS ON 다른_뷰</code>(뷰 간 의존 체인 — 앞 뷰 완료 후 실행) 등의 변형이 있다</li>
+<li>기본 동작은 <strong>원자적 교체</strong>(계산 완료 후 통째로 바꿔치기) — 조회 중에도 일관성 유지. 단 <code>APPEND</code> 모드는 일반 INSERT SELECT처럼 원자적이지 않다</li>
+<li>⚠️ 일반 MV와 정반대로, **생성 즉시 최초 리프레시가 실행되어 과거 데이터가 전부 반영된다** (원치 않으면 <code>EMPTY</code>)</li>
+<li>⚠️ APPEND가 아닌 Refreshable MV는 Atomic/Replicated 데이터베이스에서만 지원 (<code>clickhouse local</code> 기본 DB에서는 <code>CREATE DATABASE db ENGINE = Atomic</code> 후 그 안에 만들어야 한다 — 실측. <code>APPEND</code> 모드는 기본 DB에서도 동작)</li>
+<li><code>ALTER TABLE mv MODIFY REFRESH ...</code>는 **지정하지 않은 절(DEPENDS ON 등)을 전부 리셋**하므로 전체를 다시 명시해야 한다</li>
+</ul>
+<div class="tablewrap"><table><thead><tr><th></th><th>일반(incremental) MV</th><th>Refreshable MV</th></tr></thead><tbody><tr><td>실행 시점</td><td>INSERT마다 즉시</td><td>정해진 주기</td></tr><tr><td>계산 범위</td><td>신규 블록만</td><td>전체 (스냅샷)</td></tr><tr><td>신선도</td><td>실시간</td><td>주기만큼 지연</td></tr><tr><td>JOIN</td><td>왼쪽만 트리거 (함정)</td><td>자유로움</td></tr><tr><td>용도</td><td>실시간 롤업</td><td>복잡한 JOIN 요약, 랭킹, 캐시 테이블</td></tr></tbody></table></div>
+<h2 id="s10">12.7 MV 체인과 관리</h2>
+<pre class="code" data-lang="text"><code>-- MV의 대상 테이블에 또 MV를 붙일 수 있다 (계단식 롤업: 분 → 시간 → 일)
+raw → mv1 → minute_stats → mv2 → hourly_stats</code></pre>
+<p>⚠️ <strong>캐스케이드의 핵심 함정</strong>: 2단계 MV(mv2)가 받는 것은 minute_stats 테이블의 "머지 완료된 최종 상태"가 아니라 <strong>mv1이 방금 밀어 넣은 블록 그 자체</strong>다. 그래서 중간 단계에 ReplacingMergeTree/CollapsingMergeTree를 두면 중복 제거·상쇄가 일어나기 <strong>전의</strong> 데이터가 다음 단계로 흘러 결과가 틀어진다. 계단식 롤업은 각 단계를 sum/State 같은 "부분값을 다시 합쳐도 되는" 집계로만 구성해야 안전하다.</p>
+<p><strong>여러 원본 → 한 대상</strong>: MV의 SELECT에 UNION ALL을 쓰면 문법은 통과하지만 <strong>첫 번째 테이블의 INSERT에만 트리거</strong>되어 조용히 누락된다. 원본 테이블마다 MV를 하나씩 만들어 같은 대상 테이블(TO)로 모으는 것이 올바른 패턴이다.</p>
+<pre class="code" data-lang="sql"><code>-- 관리 명령
+SHOW TABLES;                       -- MV도 테이블 목록에 보인다
+DETACH TABLE purchases_mv;         -- 트리거 해제 — ⚠️ 이 동안의 INSERT는 영구 유실
+ATTACH TABLE purchases_mv;         -- 재개 (유실 구간은 백필 필요)
+DROP TABLE purchases_mv;           -- MV 삭제 (TO 방식이면 대상 테이블은 남는다)</code></pre>
+<h2 id="s11">12.8 흔한 실수 체크리스트</h2>
+<ol>
+<li>백필 잊음 — "MV 만들었는데 과거 데이터가 없어요" (12.2)</li>
+<li>SELECT 별칭과 대상 컬럼명 불일치 — 조용히 기본값이 들어감 (12.3)</li>
+<li><code>uniqState</code>로 쓰고 <code>uniq</code>로 읽음 — 바이너리가 나오거나 에러. <strong>Merge로 읽어라</strong></li>
+<li>대상 ORDER BY ≠ MV GROUP BY 키 — 단순히 "안 합쳐짐"이 아니라 <strong>행이 소실된다</strong>. 26.8 실측: 대상 <code>ORDER BY (d, app)</code> + MV <code>GROUP BY d, app, os</code>로 ios 1행 + android 2행을 넣으면 → 결과는 <code>(d, x, ios, 3)</code> 한 행. os별 구분이 통째로 사라지고 키에 없는 컬럼(os)은 임의의 값 하나만 남는다. 에러도 경고도 없다</li>
+<li>SummingMergeTree 조회에서 GROUP BY 생략 — merge 전 중복 행이 그대로 보임</li>
+<li>MV SELECT에 JOIN — 오른쪽 테이블 변경이 반영 안 되는 걸 모르고 사용</li>
+<li>UNION ALL이 든 MV — 첫 번째 원본에만 트리거 (12.7)</li>
+</ol>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="11-aggregation-window.html"><span class="pn-label">← 이전</span><span class="pn-title">11장 · 함수 레퍼런스 ②</span></a><a class="pn next" href="13-projections-skipping-indexes.html"><span class="pn-label">다음 →</span><span class="pn-title">13장 · Projection과 Data Skipping Index</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

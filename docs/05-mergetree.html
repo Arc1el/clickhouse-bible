@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>5장 · MergeTree — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a class="active" href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a class="active" href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>5장. MergeTree — ClickHouse의 심장</h1>
+<blockquote>
+<p>ClickHouse의 실전 테이블은 사실상 전부 MergeTree 계열이다. 시험의 모든 과제가</p>
+<p>MergeTree 위에서 벌어진다. <strong>이 장을 이해하면 ClickHouse의 절반을 이해한 것이다.</strong></p>
+</blockquote>
+<h2 id="s1">5.1 기본 문법</h2>
+<pre class="code" data-lang="sql"><code>CREATE TABLE events (
+    event_time DateTime,
+    user_id    UInt32,
+    event_type LowCardinality(String),
+    url        String
+) ENGINE = MergeTree
+ORDER BY (event_type, event_time);   -- MergeTree는 ORDER BY가 사실상 필수</code></pre>
+<ul>
+<li><code>ENGINE = MergeTree</code> — 기본이자 대표 엔진</li>
+<li><code>ORDER BY (...)</code> — <strong>디스크에 데이터를 어떤 순서로 정렬해 둘지</strong>. 성능의 90%가 여기서 결정된다(6장)</li>
+<li>정렬이 정말 필요 없으면 <code>ORDER BY tuple()</code> (빈 정렬)</li>
+</ul>
+<h2 id="s2">5.2 이름의 의미: "Merge" + "Tree"</h2>
+<p>MergeTree의 동작 원리는 세 문장으로 요약된다:</p>
+<ol>
+<li><strong>INSERT 한 번 = 디스크에 part(조각) 하나 생성.</strong> part는 ORDER BY 순서로 정렬된, <strong>불변(immutable)</strong> 데이터 묶음이다.</li>
+<li>part가 쌓이면 백그라운드에서 여러 part를 <strong>병합(merge)</strong>해 더 큰 part 하나로 만든다 (이때도 정렬 유지).</li>
+<li>쿼리는 활성 part들을 병렬로 읽는다.</li>
+</ol>
+<p>직접 확인해 보자 (실측 결과):</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE events (id UInt32, msg String) ENGINE = MergeTree ORDER BY id;
+INSERT INTO events VALUES (1, &#x27;a&#x27;);   -- part 1 생성
+INSERT INTO events VALUES (2, &#x27;b&#x27;);   -- part 2 생성
+INSERT INTO events VALUES (3, &#x27;c&#x27;);   -- part 3 생성
+
+SELECT name, rows FROM system.parts
+WHERE table = &#x27;events&#x27; AND active;
+-- all_1_1_0 | 1
+-- all_2_2_0 | 1      ← INSERT마다 part가 하나씩 생겼다
+-- all_3_3_0 | 1
+
+OPTIMIZE TABLE events FINAL;   -- merge를 즉시 강제 (실전에서는 남용 금지)
+
+SELECT name, rows FROM system.parts
+WHERE table = &#x27;events&#x27; AND active;
+-- all_1_3_1 | 3      ← 세 part가 하나로 합쳐졌다</code></pre>
+<p>part 이름 <code>all_1_3_1</code>의 의미: <code>파티션ID_시작블록_끝블록_병합레벨</code>. 블록 1~3을 담은 레벨 1(한 번 병합된) part라는 뜻이다.</p>
+<p>이 구조에서 세 가지 성질이 따라 나온다:</p>
+<ul>
+<li><strong>INSERT가 빠르다</strong> — 기존 데이터를 건드리지 않고 새 조각만 쓴다</li>
+<li><strong>UPDATE/DELETE가 어렵다</strong> — part가 불변이므로, 수정하려면 part를 다시 써야 한다(16장)</li>
+<li><strong>작은 INSERT를 남발하면 안 된다</strong> — part가 폭증해 "too many parts" 에러. 기본 한도(26.8 실측): 파티션당 <strong>1,000개부터 삽입 지연</strong>(parts_to_delay_insert), <strong>3,000개에서 차단</strong>(parts_to_throw_insert). <strong>수천~수만 행씩 묶어서 넣는 것</strong>이 원칙</li>
+</ul>
+<h2 id="s3">5.3 Sparse Primary Index — 10억 행을 1초에 찾는 비결</h2>
+<p>일반 DB의 인덱스는 "모든 행"의 위치를 기록한다(B-tree). ClickHouse는 다르다.</p>
+<ul>
+<li>part 안의 데이터는 <strong>granule(그래뉼)</strong>이라는 8,192행 단위 블록으로 나뉜다 (<code>index_granularity</code> 설정, 기본 8192)</li>
+<li>primary index(<code>primary.idx</code>)에는 <strong>각 granule의 첫 행 값만</strong> 기록한다 → "sparse(희소)" 인덱스</li>
+<li>10억 행이어도 인덱스 엔트리는 12만 개뿐 → <strong>통째로 메모리에 상주</strong></li>
+</ul>
+<p>쿼리가 오면:</p>
+<ol>
+<li>메모리의 sparse index를 <strong>이진 탐색</strong>해 조건에 걸릴 가능성이 있는 granule만 고른다</li>
+<li>고른 granule만 디스크에서 읽는다 (mark 파일 <code>.mrk</code>가 granule → 디스크 위치를 알려줌)</li>
+</ol>
+<p><code>EXPLAIN indexes = 1</code>로 직접 확인할 수 있다 (실측):</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE hits (user_id UInt32, url String, ts DateTime)
+ENGINE = MergeTree ORDER BY (user_id, ts);
+INSERT INTO hits SELECT number % 100, &#x27;/p&#x27;, now() - number FROM numbers(100000);
+
+EXPLAIN indexes = 1
+SELECT count() FROM hits WHERE user_id = 42;</code></pre>
+<pre class="code" data-lang="text"><code>ReadFromMergeTree (default.hits)
+  Indexes:
+    PrimaryKey
+      Keys: user_id
+      Condition: (user_id in [42, 42])
+      Parts: 1/1
+      Granules: 1/12        ← 12개 granule 중 1개만 읽었다!
+      Search Algorithm: binary search</code></pre>
+<p><strong><code>Granules: 읽은수/전체수</code>가 시험과 실무 모두에서 최적화 확인의 기준이다.</strong> ORDER BY 키로 필터하지 않으면 이 값이 <code>12/12</code>(풀스캔)가 된다.</p>
+<h2 id="s4">5.4 ORDER BY vs PRIMARY KEY</h2>
+<pre class="code" data-lang="sql"><code>CREATE TABLE t (...)
+ENGINE = MergeTree
+PRIMARY KEY (a)        -- 생략 가능
+ORDER BY (a, b);       -- 필수</code></pre>
+<ul>
+<li><code>ORDER BY</code> = 디스크 정렬 순서. <code>PRIMARY KEY</code>를 생략하면 <strong>ORDER BY 전체가 primary key</strong>가 된다 (대부분 이렇게 쓴다)</li>
+<li>둘을 따로 쓰는 경우: primary key는 ORDER BY의 <strong>접두사(prefix)</strong>여야 한다. 대표 용례는 SummingMergeTree/AggregatingMergeTree — 집계 단위를 맞추려면 모든 차원(dimension)을 ORDER BY에 넣어야 하지만, 인덱스에는 앞 몇 개만 두는 경우다</li>
+<li>긴 primary key는 <strong>INSERT 성능과 메모리에는 부담</strong>이지만, 공식 문서 기준 <strong>SELECT 성능에는 악영향이 없다</strong> — "키가 길면 조회가 느려진다"는 OLTP 직관은 여기서 틀린다 (시험 함정 포인트)</li>
+<li>⚠️ 다른 DB와 결정적 차이: <strong>ClickHouse의 primary key는 유일성(unique)을 보장하지 않는다.</strong> 같은 키의 행이 얼마든지 공존한다 (중복 제거는 14장의 ReplacingMergeTree 담당)</li>
+</ul>
+<h2 id="s5">5.5 PARTITION BY — 데이터 관리의 단위 (성능 도구가 아니다!)</h2>
+<pre class="code" data-lang="sql"><code>CREATE TABLE sales (
+    sale_date Date,
+    amount    UInt32
+) ENGINE = MergeTree
+PARTITION BY toYYYYMM(sale_date)   -- 월 단위 파티션
+ORDER BY sale_date;</code></pre>
+<p>파티션은 part들의 논리적 그룹이다. merge는 <strong>파티션 안에서만</strong> 일어난다.</p>
+<p>실측 — 파티션별로 part가 따로 만들어진다:</p>
+<pre class="code" data-lang="sql"><code>INSERT INTO sales VALUES
+    (&#x27;2026-06-15&#x27;, 100), (&#x27;2026-07-01&#x27;, 200),
+    (&#x27;2026-07-20&#x27;, 300), (&#x27;2026-08-05&#x27;, 400);
+
+SELECT partition, name, rows FROM system.parts
+WHERE table = &#x27;sales&#x27; AND active;
+-- 202606 | 202606_1_1_0 | 1
+-- 202607 | 202607_2_2_0 | 2
+-- 202608 | 202608_3_3_0 | 1
+
+-- 파티션 통째로 삭제 (매우 빠름 — 디렉토리 삭제 수준)
+ALTER TABLE sales DROP PARTITION &#x27;202606&#x27;;
+SELECT count() FROM sales;   -- 3</code></pre>
+<p><strong>공식 가이드의 핵심 주의사항:</strong></p>
+<ul>
+<li>파티션의 목적은 <strong>데이터 수명 관리</strong>다 (오래된 달 삭제, 이동, 백업). 쿼리 가속은 부수 효과일 뿐, 그걸 노리고 파티션을 잘게 쪼개면 안 된다. 공식 문서의 실측 반례: 같은 데이터·같은 쿼리에서 파티션 있는 테이블이 <strong>0.090초(431개 part에 분산)</strong>, 없는 테이블이 <strong>0.012초(1개 part)</strong> — 파티션 키와 무관한 쿼리는 오히려 느려진다</li>
+<li><strong>너무 잘게 나누지 마라</strong> (일 단위 이하, 고카디널리티 컬럼 파티션 금지). 파티션이 많으면 part 수가 폭증해 "too many parts"로 이어진다</li>
+<li>월 단위 <code>toYYYYMM(date)</code>가 가장 흔한 패턴. 총 파티션 수는 100~1,000개 이내 권장</li>
+<li>필요 없으면 <strong>아예 파티션을 안 만드는 것</strong>도 정답이다</li>
+</ul>
+<p>파티션 관리 명령 모음 (26.8 실측: <code>202606</code>처럼 따옴표 없는 표기와 <code>'202606'</code> 문자열 표기 둘 다 동작한다 — 공식 문서는 따옴표 없는 쪽을 쓴다):</p>
+<pre class="code" data-lang="sql"><code>ALTER TABLE sales DROP PARTITION 202606;              -- 삭제
+ALTER TABLE sales DETACH PARTITION 202607;            -- 분리 (보관)
+ALTER TABLE sales ATTACH PARTITION 202607;            -- 재부착
+-- 다른 테이블로 복사/이동
+ALTER TABLE sales_backup ATTACH PARTITION 202608 FROM sales;</code></pre>
+<h2 id="s6">5.6 그 외 알아둘 문법</h2>
+<pre class="code" data-lang="sql"><code>-- 테이블 설정은 SETTINGS로
+CREATE TABLE t (...) ENGINE = MergeTree ORDER BY id
+SETTINGS index_granularity = 8192;
+
+-- 샘플링 (대략적 통계를 빠르게)
+CREATE TABLE t2 (user_id UInt64, ...) ENGINE = MergeTree
+ORDER BY (user_id, intHash32(user_id))
+SAMPLE BY intHash32(user_id);
+-- SELECT count() * 10 FROM t2 SAMPLE 0.1;   -- 10% 표본</code></pre>
+<h2 id="s7">5.7 이 장의 시험 포인트 요약</h2>
+<ol>
+<li>INSERT마다 part가 생기고, 백그라운드 merge로 합쳐진다 — <strong>배치로 삽입하라</strong></li>
+<li>sparse index는 granule(8192행) 단위로 스킵한다 — <code>EXPLAIN indexes=1</code>에서 <code>Granules: x/y</code> 확인</li>
+<li>ORDER BY가 곧 primary key (생략 시) — <strong>유일성 보장 없음</strong></li>
+<li>파티션은 관리 도구 — 월 단위가 표준, 남용 금지</li>
+<li><code>OPTIMIZE TABLE ... FINAL</code>은 수동 merge — 실무에서 상시 사용 금지 (I/O 폭탄)</li>
+</ol>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="04-data-types.html"><span class="pn-label">← 이전</span><span class="pn-title">4장 · 데이터 타입 대전</span></a><a class="pn next" href="06-table-design.html"><span class="pn-label">다음 →</span><span class="pn-title">6장 · 테이블 설계</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>11장 · 함수 레퍼런스 ② — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a class="active" href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a class="active" href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>11장. 함수 레퍼런스 ② — 집계 함수와 윈도우 함수</h1>
+<blockquote>
+<p>시험 영역 3의 핵심: "use aggregate functions (max/min/sum/avg,</p>
+<p>number of unique values, quantiles)". 전부 26.8 실측 검증.</p>
+</blockquote>
+<h2 id="s1">11.1 기본 집계 5인방</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    count(),            -- 행 수 (count(*) 동일)
+    count(col),         -- col이 NULL 아닌 행 수
+    sum(amount),
+    avg(amount),
+    min(amount), max(amount)
+FROM sales;</code></pre>
+<h2 id="s2">11.2 고유값 세기 — uniq 삼형제 ★ (시험 명시)</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    uniq(user_id),        -- 근사치 (적응적 샘플링, 해시 샘플 최대 65,536) — 빠르고 메모리 상한 고정
+    uniqExact(user_id),   -- 정확 — 메모리 많이 씀
+    uniqCombined(user_id) -- 근사치 개선판 (메모리↓ 정확도↑, 결과가 결정론적)
+FROM events;
+
+-- count(DISTINCT x)도 쓸 수 있다 — 내부적으로 uniqExact로 실행된다 (기본 설정)
+SELECT count(DISTINCT user_id) FROM events;
+-- 메모리를 아끼려면: SET count_distinct_implementation = &#x27;uniqCombined&#x27;;</code></pre>
+<p>실측 (1,000만 행, 실제 고유값 10만):</p>
+<div class="tablewrap"><table><thead><tr><th>함수</th><th>결과</th><th>오차</th></tr></thead><tbody><tr><td><code>uniq</code></td><td>100,315</td><td>~0.3%</td></tr><tr><td><code>uniqExact</code></td><td>100,000</td><td>0</td></tr></tbody></table></div>
+<p><strong>문제가 "정확한(exact) 고유 수"라고 하면 uniqExact, "대략/빠르게"면 uniq.</strong> 대시보드는 uniq, 과금·정산은 uniqExact가 관례다.</p>
+<h2 id="s3">11.3 분위수 — quantile ★ (시험 명시)</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    quantile(0.5)(duration_ms)          AS median,     -- 근사 중위값
+    quantile(0.95)(duration_ms)         AS p95,
+    quantileExact(0.9)(duration_ms)     AS p90_exact,  -- 정확 버전
+    quantiles(0.5, 0.9, 0.99)(duration_ms) AS ps,      -- 한 번에 여러 개 → 배열
+    median(duration_ms)                                 -- quantile(0.5) 별칭
+FROM events;</code></pre>
+<p><strong>괄호 두 쌍 문법에 주의</strong>: <code>quantile(레벨)(컬럼)</code>. 첫 괄호는 파라미터, 둘째가 인자다.</p>
+<h2 id="s4">11.4 argMax / argMin ★★ (자격증 단골)</h2>
+<p>"B가 최대일 때의 A" — 최신값 조회의 표준 도구.</p>
+<pre class="code" data-lang="sql"><code>-- 가장 최근(updated_at 최대) 행의 plan 값
+SELECT argMax(plan, updated_at) FROM user_profiles;
+
+-- 가장 비싼 상품의 이름
+SELECT argMax(name, price) FROM products;
+
+-- ReplacingMergeTree 중복 제거 콤보 (14장, 검증됨)
+SELECT user_id, argMax(email, updated_at), max(updated_at)
+FROM user_profiles GROUP BY user_id;</code></pre>
+<h2 id="s5">11.5 그 외 자주 쓰는 집계</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    any(name),                  -- 그룹에서 아무 값 하나 (순서 비보장)
+    topK(3)(product),           -- 대략적 최빈값 상위 3개 → 배열 (검증됨)
+    groupArray(url),            -- 그룹의 값을 배열로 수집
+    groupUniqArray(url),        -- 고유값만 배열로
+    corr(x, y), stddevPop(x)    -- 통계
+FROM t GROUP BY ...;</code></pre>
+<h2 id="s6">11.6 Combinator — 집계 함수의 접미사 마법 ★</h2>
+<p>ClickHouse 고유의 강력한 체계. <strong>아무 집계 함수 뒤에 접미사를 붙여 변형</strong>한다.</p>
+<div class="tablewrap"><table><thead><tr><th>접미사</th><th>효과</th><th>예</th></tr></thead><tbody><tr><td><code>-If</code></td><td>조건 만족 행만 집계</td><td><code>countIf(status = 'error')</code>, <code>sumIf(amount, country = 'KR')</code></td></tr><tr><td><code>-Distinct</code></td><td>고유값만 집계</td><td><code>sumDistinct(x)</code></td></tr><tr><td><code>-Array</code></td><td>배열 원소를 풀어서 집계</td><td><code>sumArray(tags_lengths)</code></td></tr><tr><td><code>-State</code></td><td>중간 상태 반환 (12장 MV용)</td><td><code>uniqState(user_id)</code></td></tr><tr><td><code>-Merge</code></td><td>중간 상태를 최종값으로</td><td><code>uniqMerge(users)</code></td></tr><tr><td><code>-OrDefault</code> / <code>-OrNull</code></td><td>빈 입력이면 기본값/NULL</td><td><code>avgOrDefault(x)</code> → 0 (avg는 원래 nan), <code>sumOrNull(x)</code></td></tr></tbody></table></div>
+<p>여러 개를 붙일 때는 순서 규칙이 있다 — 공식 문구: <strong>Array가 If보다 먼저</strong>. <code>uniqArrayIf(arr, cond)</code> ⭕ / <code>uniqIfArray</code> ❌.</p>
+<p><code>-If</code>는 "피벗" 쿼리의 핵심이다 (검증됨):</p>
+<pre class="code" data-lang="sql"><code>-- 한 쿼리로 여러 조건의 집계를 나란히 (WHERE로 나누면 3번 스캔할 것을 1번에)
+SELECT
+    toDate(ts)                        AS day,
+    countIf(event_type = &#x27;view&#x27;)      AS views,
+    countIf(event_type = &#x27;purchase&#x27;)  AS purchases,
+    sumIf(amount, country = &#x27;KR&#x27;)     AS kr_revenue
+FROM events
+GROUP BY day;</code></pre>
+<h2 id="s7">11.7 GROUP BY 확장 (26.8 검증)</h2>
+<pre class="code" data-lang="sql"><code>-- ROLLUP: 소계 + 총계 행 추가 (빈 문자열/0으로 표시되는 행이 합계)
+SELECT region, sum(amount) FROM sales GROUP BY region WITH ROLLUP;
+-- Busan | 380
+-- Seoul | 350
+--       | 730   ← 총계
+
+SELECT a, b, sum(x) FROM t GROUP BY a, b WITH CUBE;    -- 모든 조합의 소계
+SELECT region, sum(amount) FROM sales GROUP BY region WITH TOTALS;  -- 총계를 별도 블록으로</code></pre>
+<h2 id="s8">11.8 윈도우 함수 — 행을 유지하며 집계</h2>
+<p>GROUP BY는 행을 요약해 <strong>줄이지만</strong>, 윈도우 함수는 <strong>행을 그대로 두고</strong> 옆에 집계 결과를 붙인다.</p>
+<pre class="code" data-lang="sql"><code>집계함수/순위함수 OVER (
+    PARTITION BY 그룹기준     -- 생략 시 전체가 한 그룹
+    ORDER BY 정렬기준
+    [ROWS BETWEEN ... AND ...] -- 프레임 (계산 범위)
+)</code></pre>
+<h3 id="s9">순위 (26.8 검증)</h3>
+<pre class="code" data-lang="sql"><code>SELECT
+    name, score,
+    row_number() OVER (ORDER BY score DESC) AS rn,     -- 1,2,3,4 (동점도 다른 번호)
+    rank()       OVER (ORDER BY score DESC) AS rnk,    -- 1,2,2,4 (동점 같은 순위, 건너뜀)
+    dense_rank() OVER (ORDER BY score DESC) AS drnk    -- 1,2,2,3 (건너뛰지 않음)
+FROM students;
+
+-- 그룹별 순위: PARTITION BY 추가
+row_number() OVER (PARTITION BY class ORDER BY score DESC)</code></pre>
+<h3 id="s10">누적합·이동평균 (26.8 검증)</h3>
+<pre class="code" data-lang="sql"><code>SELECT
+    day, sales,
+    sum(sales) OVER (ORDER BY day)  AS running_total,   -- 누적합
+    avg(sales) OVER (
+        ORDER BY day
+        ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+    ) AS moving_avg_3                                    -- 3일 이동평균
+FROM daily_sales;</code></pre>
+<p>누적합이 "저절로" 되는 이유 — 프레임 기본값 규칙: <strong>ORDER BY가 있으면 기본 프레임이 <code>RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</code></strong> (처음~현재 행)라서 sum이 자동으로 누적이 된다. ORDER BY가 없으면 파티션 전체가 프레임.</p>
+<p>그 외 순위·분포 함수: <code>first_value(x) OVER w</code>, <code>last_value(x) OVER w</code>, <code>ntile(4) OVER (ORDER BY x)</code>(4분위), <code>percent_rank()</code>.</p>
+<h3 id="s11">이전/다음 행 참조</h3>
+<pre class="code" data-lang="sql"><code>SELECT
+    day, sales,
+    lagInFrame(sales, 1)  OVER w AS prev_day,   -- 이전 행 값
+    leadInFrame(sales, 1) OVER w AS next_day,   -- 다음 행 값
+    sales - lagInFrame(sales, 1) OVER w AS diff -- 전일 대비 증감
+FROM daily_sales
+WINDOW w AS (ORDER BY day ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING);</code></pre>
+<p>(<code>lag</code>/<code>lead</code>도 정식 지원되며 이쪽은 프레임을 항상 무시한다 — 프레임 지정 없이 바로 쓸 수 있다. <code>lagInFrame</code>/<code>leadInFrame</code>은 프레임을 <strong>존중</strong>하므로 lag처럼 쓰려면 위처럼 UNBOUNDED 프레임을 명시해야 한다. <code>WINDOW 절</code>로 공통 윈도우에 이름을 붙이면 깔끔하다.)</p>
+<h2 id="s12">11.9 GROUP BY vs 윈도우 — 선택 기준</h2>
+<div class="tablewrap"><table><thead><tr><th>질문</th><th>도구</th></tr></thead><tbody><tr><td>"국가별 매출 합계는?" (요약만 필요)</td><td>GROUP BY</td></tr><tr><td>"각 주문에 그 국가의 매출 비중을 붙여라" (행 유지)</td><td>윈도우</td></tr><tr><td>"누적/이동/전일 대비"</td><td>윈도우</td></tr><tr><td>"그룹별 상위 N행"</td><td><code>LIMIT n BY</code> (9장) 또는 row_number 필터</td></tr></tbody></table></div>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="10-functions.html"><span class="pn-label">← 이전</span><span class="pn-title">10장 · 함수 레퍼런스 ①</span></a><a class="pn next" href="12-materialized-views.html"><span class="pn-label">다음 →</span><span class="pn-title">12장 · Materialized View</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

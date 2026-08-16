@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>10장 · 함수 레퍼런스 ① — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a class="active" href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a class="active" href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>10장. 함수 레퍼런스 ① — 문자열·날짜·조건·배열</h1>
+<blockquote>
+<p>시험 영역 3의 문구: "use regular functions (search for a substring,</p>
+<p>convert a timestamp, ...)". 이 장의 함수들은 전부 26.8에서 실행 검증되었다.</p>
+<p>시험장에서는 문서를 열 수 있으니 <strong>이름과 용도만 확실히</strong> 기억하면 된다.</p>
+</blockquote>
+<h2 id="s1">10.1 문자열 함수 ★ (부분 문자열 검색 = 시험 명시)</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    length(&#x27;ClickHouse&#x27;),                    -- 10 (바이트 길이; 문자 수는 lengthUTF8)
+    lower(&#x27;ABC&#x27;), upper(&#x27;abc&#x27;),              -- abc / ABC
+    concat(&#x27;Click&#x27;, &#x27;House&#x27;),                -- ClickHouse (&#x27;Click&#x27; || &#x27;House&#x27;도 동일)
+    substring(&#x27;ClickHouse&#x27;, 6, 5),           -- House (시작위치 1부터!)
+    trim(&#x27;  hi  &#x27;),                          -- hi
+    startsWith(&#x27;https://x.com&#x27;, &#x27;https&#x27;),    -- 1
+    endsWith(&#x27;file.csv&#x27;, &#x27;.csv&#x27;);            -- 1</code></pre>
+<h3 id="s2">부분 문자열 검색 세트</h3>
+<pre class="code" data-lang="sql"><code>SELECT position(&#x27;ClickHouse&#x27;, &#x27;House&#x27;);      -- 6 (없으면 0) — 위치 반환
+SELECT positionCaseInsensitive(&#x27;ClickHouse&#x27;, &#x27;HOUSE&#x27;);  -- 6 — 대소문자 무시
+SELECT &#x27;ClickHouse&#x27; LIKE &#x27;%House%&#x27;;          -- 1 — 패턴 (%=아무거나, _=한 글자)
+SELECT &#x27;ClickHouse&#x27; ILIKE &#x27;%house%&#x27;;         -- 1 — 대소문자 무시 LIKE
+SELECT match(&#x27;hello123&#x27;, &#x27;^[a-z]+\d+$&#x27;);     -- 1 — 정규식
+SELECT multiSearchAny(&#x27;ClickHouse&#x27;, [&#x27;byte&#x27;, &#x27;House&#x27;]); -- 1 — 여러 패턴 중 하나라도 (OR LIKE보다 빠름)</code></pre>
+<p>⚠️ <code>locate('찾을것', '대상')</code>이라는 함수도 있는데 <strong>position과 인자 순서가 반대</strong>다 (MySQL 호환용). 헷갈리면 position만 쓰자.</p>
+<h3 id="s3">치환·추출·분해</h3>
+<pre class="code" data-lang="sql"><code>SELECT replaceOne(&#x27;a-b-c&#x27;, &#x27;-&#x27;, &#x27;_&#x27;);        -- a_b-c (첫 번째만)
+SELECT replaceAll(&#x27;a-b-c&#x27;, &#x27;-&#x27;, &#x27;_&#x27;);        -- a_b_c
+SELECT replaceRegexpAll(&#x27;a1b22c&#x27;, &#x27;\d+&#x27;, &#x27;#&#x27;); -- a#b#c
+SELECT extract(&#x27;price: 1500 won&#x27;, &#x27;\d+&#x27;);    -- 1500 (정규식 첫 매치)
+SELECT extractAll(&#x27;1a2b3&#x27;, &#x27;\d&#x27;);            -- [&#x27;1&#x27;,&#x27;2&#x27;,&#x27;3&#x27;]
+SELECT splitByChar(&#x27;,&#x27;, &#x27;a,b,c&#x27;);            -- [&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;]
+SELECT splitByString(&#x27;::&#x27;, &#x27;a::b&#x27;);          -- [&#x27;a&#x27;,&#x27;b&#x27;]</code></pre>
+<h3 id="s4">사람 눈용 포맷</h3>
+<pre class="code" data-lang="sql"><code>SELECT formatReadableSize(123456789);        -- 117.74 MiB
+SELECT formatReadableQuantity(9876543);      -- 9.88 million</code></pre>
+<h2 id="s5">10.2 날짜·시간 함수 ★★ (타임스탬프 변환 = 시험 명시)</h2>
+<h3 id="s6">지금·오늘·구성 요소</h3>
+<pre class="code" data-lang="sql"><code>SELECT now(), today(), yesterday();
+SELECT
+    toYear(toDate(&#x27;2026-08-16&#x27;)),        -- 2026
+    toMonth(toDate(&#x27;2026-08-16&#x27;)),       -- 8
+    toDayOfMonth(toDate(&#x27;2026-08-16&#x27;)),  -- 16
+    toDayOfWeek(toDate(&#x27;2026-08-16&#x27;)),   -- 7 (월=1 ~ 일=7)
+    toHour(now()),
+    toYYYYMM(toDate(&#x27;2026-08-16&#x27;));      -- 202608 (파티션 표현식 단골)</code></pre>
+<h3 id="s7">시간 버킷 만들기 (GROUP BY의 단짝 — "시간 단위 집계" 시험 문형)</h3>
+<pre class="code" data-lang="sql"><code>SELECT toStartOfHour(ts), count() FROM events GROUP BY 1;   -- 시간별
+-- 계열: toStartOfMinute / Day / Week / Month / Quarter / Year
+-- 다른 DB에서 온 사람용 동의어: dateTrunc(&#x27;hour&#x27;, ts) = toStartOfHour(ts)
+-- 임의 간격:
+SELECT toStartOfInterval(ts, INTERVAL 15 MINUTE) AS bucket, count()
+FROM events GROUP BY bucket;   -- 15분 버킷 (26.8 검증)</code></pre>
+<h3 id="s8">덧셈·뺄셈·차이</h3>
+<pre class="code" data-lang="sql"><code>SELECT addDays(toDate(&#x27;2026-08-16&#x27;), 10);        -- 2026-08-26
+-- 계열: addHours/addMinutes/addMonths..., subtractDays/...
+SELECT toDate(&#x27;2026-08-16&#x27;) + INTERVAL 1 MONTH;  -- 연산자 스타일
+SELECT dateDiff(&#x27;day&#x27;, toDate(&#x27;2026-08-01&#x27;), toDate(&#x27;2026-08-16&#x27;));  -- 15
+-- 단위: &#x27;second&#x27;,&#x27;minute&#x27;,&#x27;hour&#x27;,&#x27;day&#x27;,&#x27;week&#x27;,&#x27;month&#x27;,&#x27;year&#x27;
+
+-- dateDiff vs age — 시험 함정: dateDiff는 &quot;경계를 넘은 횟수&quot;, age는 &quot;채워진 단위 수&quot;
+SELECT dateDiff(&#x27;month&#x27;, toDate(&#x27;2021-12-29&#x27;), toDate(&#x27;2022-01-01&#x27;));  -- 1 (월 경계 넘음)
+SELECT age(&#x27;month&#x27;,      toDate(&#x27;2021-12-29&#x27;), toDate(&#x27;2022-01-01&#x27;));  -- 0 (한 달이 안 참)</code></pre>
+<h3 id="s9">문자열 ↔ 시간 변환 (26.8 실측 — 함정 포함)</h3>
+<pre class="code" data-lang="sql"><code>-- 표준 형식은 to계열로 바로
+SELECT toDate(&#x27;2026-08-16&#x27;), toDateTime(&#x27;2026-08-16 12:34:56&#x27;);
+
+-- 제각각인 형식은 BestEffort로
+SELECT parseDateTimeBestEffort(&#x27;Aug 16 2026 14:30:00&#x27;);        -- OK
+SELECT parseDateTimeBestEffort(&#x27;2026-08-16T14:30:00+09:00&#x27;);   -- OK (ISO+타임존)
+
+-- ⚠️ Apache 로그 형식은 BestEffort가 못 읽는다 (실측: 에러) → 포맷 지정 파싱
+SELECT parseDateTime(&#x27;16/Aug/2026:14:30:00&#x27;, &#x27;%d/%b/%Y:%H:%i:%s&#x27;);
+-- 실패 시 NULL을 원하면: parseDateTimeBestEffortOrNull / parseDateTimeOrNull
+
+-- 시간 → 문자열
+SELECT formatDateTime(now(), &#x27;%Y-%m-%d %H:%i&#x27;);   -- MySQL 스타일 포맷 문자</code></pre>
+<h3 id="s10">Unix 타임스탬프와 타임존</h3>
+<pre class="code" data-lang="sql"><code>SELECT toUnixTimestamp(toDateTime(&#x27;2026-08-16 00:00:00&#x27;));
+-- 1786806000 (서버 타임존이 Asia/Seoul일 때 — UTC 서버라면 1786838400)
+-- 재현 가능하게 쓰려면 타임존을 고정: toDateTime(&#x27;2026-08-16 00:00:00&#x27;, &#x27;UTC&#x27;)
+SELECT fromUnixTimestamp(1786806000);
+SELECT toTimeZone(now(), &#x27;Asia/Seoul&#x27;);   -- 표시 타임존 변환
+SELECT toString(now(), &#x27;Asia/Seoul&#x27;);     -- 타임존 지정 문자열화</code></pre>
+<h2 id="s11">10.3 조건 함수</h2>
+<pre class="code" data-lang="sql"><code>SELECT if(price &gt; 10000, &#x27;expensive&#x27;, &#x27;cheap&#x27;);            -- 3항
+SELECT multiIf(p &lt; 3, &#x27;low&#x27;, p &lt; 7, &#x27;mid&#x27;, &#x27;high&#x27;);        -- 다단계 (검증됨)
+-- CASE WHEN ... THEN ... ELSE ... END 도 동일하게 동작 (multiIf로 변환됨)
+
+-- NULL 다루기
+SELECT ifNull(nickname, &#x27;(없음)&#x27;);       -- NULL이면 대체값
+SELECT coalesce(a, b, c, &#x27;기본&#x27;);        -- 처음 만나는 비NULL
+SELECT nullIf(v, 0);                     -- v=0이면 NULL로
+SELECT assumeNotNull(x);                 -- Nullable 벗기기 — ⚠️ NULL이면 결과가
+                                         -- 보장되지 않는다(임의 값). NULL 없음이 확실할 때만
+SELECT greatest(3, 7), least(3, 7);      -- 7, 3</code></pre>
+<h2 id="s12">10.4 배열 함수 + 람다</h2>
+<p>배열 인덱스는 <strong>1부터</strong>다.</p>
+<pre class="code" data-lang="sql"><code>SELECT
+    [10,20,30][1],                        -- 10
+    length([1,2,3]),                      -- 3
+    has([1,2,3], 2),                      -- 1 (포함 여부)
+    hasAll([1,2,3], [1,3]),               -- 1 (전부 포함?)
+    hasAny([1,2], [2,9]),                 -- 1 (하나라도?)
+    indexOf([&#x27;a&#x27;,&#x27;b&#x27;], &#x27;b&#x27;);              -- 2
+
+-- 람다 (x -&gt; 식) 를 받는 고차 함수 (26.8 검증)
+SELECT
+    arrayMap(x -&gt; x * x, [1,2,3]),        -- [1,4,9]
+    arrayFilter(x -&gt; x &gt; 10, [5,15,25]),  -- [15,25]
+    arraySum([1,2,3]),                    -- 6
+    arrayCount(x -&gt; x % 2 = 0, [1,2,3,4]),-- 2
+    arraySort([3,1,2]),                   -- [1,2,3]
+    arrayReverseSort([3,1,2]),            -- [3,2,1]
+    arrayDistinct([1,1,2]),               -- [1,2]
+    arrayFlatten([[1,2],[3]]);            -- [1,2,3]
+
+-- 집계와의 콤보: groupArray로 모아서 배열 함수로 가공 (검증됨)
+SELECT arrayMap(x -&gt; x * x, groupArray(number)) FROM numbers(5);</code></pre>
+<h2 id="s13">10.5 수학·기타</h2>
+<pre class="code" data-lang="sql"><code>SELECT round(3.567, 2), floor(3.9), ceil(3.1);   -- 3.57, 3, 4
+SELECT abs(-5), intDiv(7, 2), 7 % 2;             -- 5, 3(정수 나눗셈), 1
+SELECT roundBankers(2.5);                        -- 2 (은행가 반올림)
+
+SELECT toTypeName([1, 2]);       -- 값의 타입 확인 (디버깅 필수품)
+SELECT generateUUIDv4();
+SELECT rand() % 100;             -- 0~99 난수
+SELECT version(), hostName();</code></pre>
+<h2 id="s14">10.6 함수를 "찾는" 능력이 진짜 실력</h2>
+<p>시험장에서 함수명이 기억 안 나면:</p>
+<ol>
+<li>공식 문서 검색창에 <strong>하고 싶은 일의 영어 키워드</strong> 입력 (예: "split string")</li>
+<li><a href="https://clickhouse.com/docs/sql-reference/functions">SQL Reference → Functions</a> 카테고리에서 훑기</li>
+<li><code>system.functions</code> 테이블 검색: <code>SELECT name FROM system.functions WHERE name ILIKE '%split%'</code></li>
+</ol>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="09-select-deep-dive.html"><span class="pn-label">← 이전</span><span class="pn-title">9장 · SELECT 심화</span></a><a class="pn next" href="11-aggregation-window.html"><span class="pn-label">다음 →</span><span class="pn-title">11장 · 함수 레퍼런스 ②</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

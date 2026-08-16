@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>6장 · 테이블 설계 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a class="active" href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a class="active" href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>6장. 테이블 설계 — ORDER BY 키, TTL, 압축</h1>
+<blockquote>
+<p>시험 영역 1의 두 번째 축: "쿼리 유형에 맞는 효율적인 primary key 정의".</p>
+<p>그리고 실무 설계의 나머지 축인 TTL과 압축 codec을 함께 다룬다.</p>
+</blockquote>
+<h2 id="s1">6.1 ORDER BY 키 설계 — 공식 규칙 4가지</h2>
+<p>ClickHouse 공식 best practice가 제시하는 규칙은 명확하다:</p>
+<ol>
+<li><strong>WHERE에 자주 등장하는 컬럼</strong>을 키로 골라라 (쿼리 패턴이 출발점)</li>
+<li><strong>카디널리티(고유값 수)가 낮은 컬럼을 앞에</strong> 둬라 — 예: <code>(event_type[5종], user_id[100만], timestamp)</code> 순</li>
+<li>키는 <strong>4~5개면 대개 충분</strong>하다 (공식 문구: "4-5 typically sufficient" — 뒤쪽 키는 효과가 급감한다)</li>
+<li>GROUP BY 대상 컬럼이 키에 있으면 집계도 빨라진다 (정렬된 데이터의 부수 효과)</li>
+</ol>
+<p>이 규칙들은 서로 충돌할 수 있다 — 공식 가이드는 <strong>위 순서대로 우선순위를 두고</strong> 판단하라고 명시한다.</p>
+<h3 id="s2">왜 "낮은 카디널리티 먼저"인가 — 실측 증명</h3>
+<p>같은 1,000만 행(이벤트 5종 × 사용자 100만)을 두 가지 순서로 저장하고 <code>WHERE event_type = 'buy'</code>를 실행한 결과:</p>
+<div class="tablewrap"><table><thead><tr><th>ORDER BY</th><th>읽은 granule</th><th>의미</th></tr></thead><tbody><tr><td><code>(event_type, user_id)</code> ✅</td><td><strong>251 / 1223</strong></td><td>'buy' 구간만 정확히 읽음 (~1/5)</td></tr><tr><td><code>(user_id, event_type)</code> ❌</td><td><strong>1223 / 1223</strong></td><td>풀스캔 — 인덱스 무용지물</td></tr></tbody></table></div>
+<p>이유: 첫 번째 키가 <code>user_id</code>면 'buy'가 100만 사용자 구간마다 흩어져 있어 건너뛸 granule이 없다. 첫 번째 키가 <code>event_type</code>이면 'buy'가 한 구간에 모여 있다. 앞 키로 정렬된 큰 구간 안에서만 뒷 키가 정렬되므로, <strong>뒤 키 단독 필터는 효과가 약하다.</strong></p>
+<h3 id="s3">설계 절차 (시험에서 그대로 쓰는 사고 과정)</h3>
+<ol>
+<li>문제에서 요구하는 대표 쿼리를 확인한다 — 예: "특정 event_type의 기간별 집계"</li>
+<li>WHERE 대상 컬럼을 나열한다 — <code>event_type</code>, <code>event_time</code></li>
+<li>카디널리티 낮은 순으로 배열한다 — <code>ORDER BY (event_type, event_time)</code></li>
+<li><code>EXPLAIN indexes = 1</code>로 <code>Granules: x/y</code> 를 확인해 검증한다</li>
+</ol>
+<h3 id="s4">시간 컬럼은 어디에 두나</h3>
+<ul>
+<li>대부분의 쿼리가 "타입/테넌트 필터 + 시간 범위"라면: <code>(type, timestamp)</code> — 시간을 뒤에</li>
+<li>거의 항상 최근 데이터만 본다면 timestamp를 앞에 둘 수도 있지만, 그러면 다른 필터가 죽는다. 일반적으로는 <strong>저카디널리티 필터 → 시간</strong> 순서가 표준이다</li>
+</ul>
+<h2 id="s5">6.2 TTL — 데이터 수명 자동 관리</h2>
+<p>오래된 데이터를 자동으로 지우거나 옮긴다. (검증: 26.8)</p>
+<pre class="code" data-lang="sql"><code>-- 행 단위: 90일 지나면 삭제
+CREATE TABLE metrics (
+    ts        DateTime,
+    sensor_id UInt32,
+    value     Float64,
+    raw_payload String TTL ts + INTERVAL 1 DAY   -- 컬럼 단위: 1일 뒤 이 컬럼만 기본값으로
+) ENGINE = MergeTree
+ORDER BY (sensor_id, ts)
+TTL ts + INTERVAL 90 DAY DELETE;   -- DELETE는 기본 동작이라 생략 가능</code></pre>
+<p>변형들:</p>
+<pre class="code" data-lang="sql"><code>-- 기존 테이블에 추가/변경
+ALTER TABLE metrics MODIFY TTL ts + INTERVAL 180 DAY;
+
+-- 오래된 데이터를 값싼 디스크/볼륨으로 이동 (계층형 스토리지)
+TTL ts + INTERVAL 30 DAY TO DISK &#x27;cold&#x27;,
+    ts + INTERVAL 365 DAY DELETE
+
+-- 오래된 데이터를 집계본으로 축약 (roll-up)
+TTL ts + INTERVAL 30 DAY GROUP BY sensor_id SET value = avg(value)
+
+-- 오래된 데이터를 더 강한 압축으로 재압축
+TTL ts + INTERVAL 30 DAY RECOMPRESS CODEC(ZSTD(9))</code></pre>
+<p>주의: TTL 적용은 <strong>merge 시점</strong>에 일어난다 — 시간이 지났다고 즉시 지워지지 않는다. 기존 part에 TTL 규칙을 소급 적용하려면 <code>ALTER TABLE metrics MATERIALIZE TTL;</code>, 만료분을 즉시 정리하려면 <code>OPTIMIZE TABLE metrics FINAL;</code>.</p>
+<p>TTL의 제약 3가지 (시험 함정):</p>
+<ol>
+<li><strong>컬럼 TTL은 키(ORDER BY/PARTITION BY) 컬럼에 걸 수 없다</strong></li>
+<li><code>TTL ... GROUP BY</code>의 그룹 키는 <strong>primary key의 접두사</strong>여야 한다</li>
+<li>TTL 식에 <code>now()</code> 같은 비결정적 함수를 넣으면 merge마다 재평가되어 삭제 시점이 예측 불가능해진다</li>
+</ol>
+<p>효율 팁: 파티션 키와 TTL 날짜 컬럼을 맞추고 <code>SETTINGS ttl_only_drop_parts = 1</code>을 켜면, 행 단위 재작성 없이 <strong>만료된 part를 통째로 drop</strong>한다 (대용량 시계열의 표준 구성).</p>
+<h2 id="s6">6.3 압축 codec — 컬럼별 맞춤 압축</h2>
+<p>기본 압축은 셀프 호스팅이 LZ4(빠름), <strong>ClickHouse Cloud는 ZSTD(1)</strong>이다. 컬럼 특성에 맞는 codec을 지정하면 극적으로 줄어든다.</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE metrics (
+    ts    DateTime CODEC(DoubleDelta, ZSTD),  -- codec 체인: 변환 후 압축
+    value Float64  CODEC(Gorilla, ZSTD),
+    body  String   CODEC(ZSTD(3))
+) ENGINE = MergeTree ORDER BY ts;</code></pre>
+<p>우선순위에 주의: 공식 실험에서 <strong>타입 최소화 + ORDER BY 설계만으로 50GB → 25GB</strong>를 만든 뒤에야 codec을 손댔다. codec은 마지막 단계의 미세 조정이다.</p>
+<div class="tablewrap"><table><thead><tr><th>Codec</th><th>적합한 데이터</th><th>원리</th></tr></thead><tbody><tr><td><code>LZ4</code> (기본)</td><td>범용</td><td>빠른 압축/해제</td></tr><tr><td><code>ZSTD(레벨 1~22)</code></td><td>범용, 더 높은 압축률</td><td>압축률↑ CPU↑ (레벨 3 안팎이 실용적)</td></tr><tr><td><code>Delta</code></td><td>조금씩 증가하는 정수</td><td>이전 값과의 차이만 저장</td></tr><tr><td><code>DoubleDelta</code></td><td>일정 간격의 타임스탬프</td><td>차이의 차이 저장 (등차수열이면 거의 0)</td></tr><tr><td><code>Gorilla</code></td><td>천천히 변하는 Float (센서값)</td><td>XOR 기반</td></tr><tr><td><code>T64</code></td><td>실제 범위가 좁은 정수</td><td>공통 상위 비트 제거</td></tr><tr><td><code>NONE</code></td><td>이미 압축된 데이터 (이미지 등)</td><td>무압축</td></tr></tbody></table></div>
+<p>관용 패턴: 시계열 타임스탬프 = <code>CODEC(DoubleDelta, ZSTD)</code>, 센서 Float = <code>CODEC(Gorilla, ZSTD)</code>, 증가 ID = <code>CODEC(Delta, ZSTD)</code>.</p>
+<p>두 가지 주의:</p>
+<ul>
+<li><code>Delta</code>/<code>DoubleDelta</code>/<code>GCD</code>는 <strong>데이터 준비용 codec</strong>이라 단독으로는 의미가 없고 뒤에 범용 codec(LZ4/ZSTD)을 붙여야 한다</li>
+<li>codec이 <strong>역효과</strong>를 낼 수도 있다 — 공식 실측에서 단조 증가하는 ID는 <code>Delta, ZSTD</code>로 압축비 1.42→3.43 개선됐지만, 들쭉날쭉한 값(ViewCount)은 5.05→4.22로 <strong>악화</strong>됐다. 적용 후 <code>system.parts_columns</code>로 반드시 확인하라 (16장)</li>
+</ul>
+<p>압축 효과 확인 쿼리 (실측 — 26.8):</p>
+<pre class="code" data-lang="sql"><code>SELECT
+    column,
+    formatReadableSize(sum(column_data_compressed_bytes))   AS compressed,
+    formatReadableSize(sum(column_data_uncompressed_bytes)) AS uncompressed,
+    round(sum(column_data_uncompressed_bytes) / sum(column_data_compressed_bytes), 1) AS ratio
+FROM system.parts_columns
+WHERE table = &#x27;big&#x27; AND active
+GROUP BY column
+ORDER BY sum(column_data_compressed_bytes) DESC;
+-- name(무작위 문자열): 4.2배 | id(연속 정수): 2배 | tag(LowCardinality 3종): 208배</code></pre>
+<h2 id="s7">6.4 DEFAULT / MATERIALIZED / ALIAS 컬럼</h2>
+<pre class="code" data-lang="sql"><code>CREATE TABLE t (
+    url    String,
+    -- INSERT에서 생략하면 이 값이 들어감
+    status UInt16 DEFAULT 200,
+    -- 항상 자동 계산되어 &quot;저장&quot;됨 (INSERT로 직접 넣을 수 없음)
+    domain String MATERIALIZED domain(url),
+    -- 저장 안 하고 조회 때마다 계산 (가상 컬럼)
+    is_https Bool ALIAS startsWith(url, &#x27;https&#x27;)
+) ENGINE = MergeTree ORDER BY url;</code></pre>
+<ul>
+<li><code>MATERIALIZED</code>: 디스크를 쓰지만 조회가 빠르다 — 자주 조회하는 파생값</li>
+<li><code>ALIAS</code>: 디스크 0 — 가끔 쓰는 편의 표현</li>
+<li><code>SELECT *</code>에는 MATERIALIZED/ALIAS 컬럼이 <strong>나오지 않는다</strong> (이름을 직접 지정해야 조회됨)</li>
+</ul>
+<h2 id="s8">6.5 설계 종합 예제 — 시험 스타일</h2>
+<p>요구사항: "웹 로그를 저장하라. 주요 쿼리는 ① 특정 status code의 최근 1시간 조회 ② 도메인별 일간 요청 수. 데이터는 90일 보관."</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE web_logs (
+    ts       DateTime CODEC(DoubleDelta, ZSTD),
+    status   UInt16,                        -- 100~599, UInt8 불가!
+    method   LowCardinality(String),        -- GET/POST/... 소수
+    domain   LowCardinality(String),
+    path     String,
+    bytes    UInt32,
+    client_ip IPv4
+) ENGINE = MergeTree
+PARTITION BY toYYYYMM(ts)
+ORDER BY (status, ts)                       -- 대표 쿼리 ①에 맞춤
+TTL ts + INTERVAL 90 DAY;</code></pre>
+<p>②(도메인별 집계)는 ORDER BY로 커버되지 않는다 → 14~15장의 Materialized View 또는 Projection으로 해결한다. <strong>"모든 쿼리를 하나의 ORDER BY로 잡을 수 없을 때 무엇을 추가하는가"가 시험 영역 4의 주제다.</strong></p>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="05-mergetree.html"><span class="pn-label">← 이전</span><span class="pn-title">5장 · MergeTree</span></a><a class="pn next" href="07-dictionary.html"><span class="pn-label">다음 →</span><span class="pn-title">7장 · Dictionary</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

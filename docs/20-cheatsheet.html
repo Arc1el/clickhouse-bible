@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>20장 · 최종 치트시트 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a class="active" href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a class="active" href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>20장. 최종 치트시트 — 시험 직전 10분 복습용</h1>
+<blockquote>
+<p>전 장의 핵심을 한 장에 압축했다. 전부 26.8에서 검증된 문법이다.</p>
+</blockquote>
+<h2 id="s1">A. 테이블 생성 골격</h2>
+<pre class="code" data-lang="sql"><code>CREATE DATABASE IF NOT EXISTS shop;
+
+CREATE TABLE shop.events (
+    event_time DateTime,
+    user_id    UInt32,                     -- 음수 없으면 UInt, 최소 크기
+    event_type LowCardinality(String),     -- 고유값 적은 문자열
+    amount     Decimal(18, 2),             -- 돈은 Decimal
+    tags       Array(String)
+) ENGINE = MergeTree
+PARTITION BY toYYYYMM(event_time)          -- (선택) 월 단위가 표준
+ORDER BY (event_type, event_time)          -- 저카디널리티 먼저, 쿼리 패턴 따라
+TTL event_time + INTERVAL 90 DAY;          -- (선택)</code></pre>
+<h2 id="s2">B. 타입 선택 즉답표</h2>
+<div class="tablewrap"><table><thead><tr><th>요구</th><th>타입</th></tr></thead><tbody><tr><td>개수·ID (수억 이하)</td><td>UInt32</td></tr><tr><td>초 단위 시각</td><td>DateTime / 밀리초 DateTime64(3)</td></tr><tr><td>종류 적은 문자열</td><td>LowCardinality(String)</td></tr><tr><td>돈</td><td>Decimal(18,2) — sum 결과는 Decimal(38,2)!</td></tr><tr><td>상태코드(100~599)</td><td>UInt16</td></tr><tr><td>NULL 필요</td><td>Nullable(T) — 비용 있음, 신중히</td></tr></tbody></table></div>
+<h2 id="s3">C. 삽입 3형제</h2>
+<pre class="code" data-lang="sql"><code>INSERT INTO t VALUES (1, &#x27;a&#x27;);
+INSERT INTO t SELECT * FROM other_table WHERE ...;               -- 테이블 간
+INSERT INTO t SELECT id, upper(name), price/1300                 -- 변환하며
+FROM file(&#x27;data.csv&#x27;, &#x27;CSVWithNames&#x27;);                           -- 로컬 파일
+-- s3: FROM s3(&#x27;https://.../*.parquet&#x27;, NOSIGN)  또는 (url,KEY,SECRET,&#x27;Parquet&#x27;)
+-- 구조 미리 보기: DESCRIBE file(&#x27;data.csv&#x27;);</code></pre>
+<h2 id="s4">D. 분석 필수 함수</h2>
+<pre class="code" data-lang="sql"><code>-- 문자열: position(s,&#x27;x&#x27;)&gt;0, s LIKE &#x27;%x%&#x27;, match(s,&#x27;정규식&#x27;), replaceAll, splitByChar
+-- 시간:   toStartOfHour/Day/Month, toStartOfInterval(ts, INTERVAL 15 MINUTE),
+--         dateDiff(&#x27;day&#x27;,a,b), parseDateTimeBestEffort, formatDateTime(ts,&#x27;%Y-%m-%d&#x27;)
+-- 집계:   count, sum, avg, min, max
+--         uniq(근사) vs uniqExact(정확)
+--         quantile(0.5)(x)  ← 괄호 두 쌍!
+--         argMax(a, b) = &quot;b 최대인 행의 a&quot; (최신값 조회)
+--         topK(3)(x), groupArray(x)
+-- 조건부: countIf(cond), sumIf(x, cond), multiIf(c1,v1,c2,v2,else)
+-- 그룹별 상위 N: ORDER BY g, v DESC LIMIT n BY g</code></pre>
+<h2 id="s5">E. Materialized View 2종 세트</h2>
+<pre class="code" data-lang="sql"><code>-- 비집계 (필터/변환)
+CREATE MATERIALIZED VIEW mv TO target AS
+SELECT ... FROM src WHERE ...;
+-- ⚠️ 생성 이후 INSERT만 반영 → 백필: INSERT INTO target SELECT ... FROM src;
+
+-- 집계 (AggregatingMergeTree)
+CREATE TABLE daily (
+    day Date,
+    users AggregateFunction(uniq, UInt32),
+    total SimpleAggregateFunction(sum, UInt64)
+) ENGINE = AggregatingMergeTree ORDER BY day;   -- ORDER BY = GROUP BY 키!
+
+CREATE MATERIALIZED VIEW daily_mv TO daily AS
+SELECT toDate(ts) AS day, uniqState(user_id) AS users, count() AS total
+FROM src GROUP BY day;
+
+SELECT day, uniqMerge(users), sum(total) FROM daily GROUP BY day;
+-- 공식: 쓰기 = xxxState / 읽기 = xxxMerge / 단순합계 = SimpleAggregateFunction</code></pre>
+<h2 id="s6">F. Projection / Skipping Index</h2>
+<pre class="code" data-lang="sql"><code>ALTER TABLE t ADD PROJECTION p (SELECT * ORDER BY user_id);
+ALTER TABLE t MATERIALIZE PROJECTION p SETTINGS mutations_sync = 1;  -- 기존 데이터 필수!
+
+ALTER TABLE t ADD INDEX i country TYPE set(100) GRANULARITY 4;       -- 또는 TYPE minmax
+ALTER TABLE t MATERIALIZE INDEX i SETTINGS mutations_sync = 1;
+
+-- 검증: EXPLAIN indexes = 1 SELECT ... → &quot;Granules: 읽음/전체&quot;
+-- 강제: SETTINGS force_optimize_projection = 1</code></pre>
+<h2 id="s7">G. 중복 제거·수정 선택표</h2>
+<div class="tablewrap"><table><thead><tr><th>상황</th><th>도구</th><th>핵심 문법</th></tr></thead><tbody><tr><td>최신값 upsert</td><td>ReplacingMergeTree(ver)</td><td>조회: <code>FINAL</code> 또는 <code>argMax(col, ver)</code> + GROUP BY</td></tr><tr><td>잦은 상태 변경</td><td>CollapsingMergeTree(sign)</td><td>취소행(-1)+새행(+1) / <code>sum(x*sign) HAVING sum(sign)&gt;0</code></td></tr><tr><td>순서 뒤섞임</td><td>VersionedCollapsingMergeTree(sign, ver)</td><td></td></tr><tr><td>소량 삭제</td><td><code>DELETE FROM t WHERE ...</code></td><td>projection 있으면: <code>MODIFY SETTING lightweight_mutation_projection_mode='rebuild'</code></td></tr><tr><td>대량 수정/삭제</td><td><code>ALTER TABLE t UPDATE/DELETE ... WHERE ...</code></td><td><code>SETTINGS mutations_sync = 1</code></td></tr><tr><td>기간 만료</td><td><code>TTL</code> / <code>ALTER TABLE t DROP PARTITION 'p'</code></td><td></td></tr></tbody></table></div>
+<h2 id="s8">H. Dictionary</h2>
+<pre class="code" data-lang="sql"><code>CREATE DICTIONARY d (code String, name String)
+PRIMARY KEY code
+SOURCE(CLICKHOUSE(TABLE &#x27;src&#x27;))
+LAYOUT(COMPLEX_KEY_HASHED())     -- UInt64 키면 HASHED()/FLAT()
+LIFETIME(MIN 0 MAX 300);
+
+SELECT dictGet(&#x27;d&#x27;, &#x27;name&#x27;, &#x27;KR&#x27;);
+SELECT dictGetOrDefault(&#x27;d&#x27;, &#x27;name&#x27;, &#x27;XX&#x27;, &#x27;기본값&#x27;);</code></pre>
+<h2 id="s9">I. 검증·디버깅 쿼리</h2>
+<pre class="code" data-lang="sql"><code>EXPLAIN indexes = 1 SELECT ...;                        -- 인덱스 사용 확인
+SELECT count(), min(x), max(x) FROM t;                 -- 과제 후 검증 습관
+DESCRIBE t;  SHOW CREATE TABLE t;
+SELECT * FROM system.parts WHERE table=&#x27;t&#x27; AND active; -- part/크기
+SELECT * FROM system.mutations WHERE NOT is_done;      -- 뮤테이션 진행
+SELECT name FROM system.functions WHERE name ILIKE &#x27;%split%&#x27;;  -- 함수 찾기</code></pre>
+<h2 id="s10">J. 실측된 함정 리스트 (이 책에서 직접 확인한 것)</h2>
+<ol>
+<li><code>toInt8(200)</code> → <strong>-56</strong> 조용한 오버플로 → <code>accurateCast</code>로 안전 변환</li>
+<li><code>sum(Decimal(18,2))</code> 결과 타입은 <strong>Decimal(38,2)</strong> → MV 대상 컬럼 타입 주의</li>
+<li>MV는 <strong>생성 이후 INSERT만</strong> 반영 → 경계 시각을 정한 백필 필수 (12장)</li>
+<li>projection 있는 테이블의 lightweight DELETE는 <strong>기본 거부</strong> → MODIFY SETTING 'rebuild'</li>
+<li><code>ADD PROJECTION</code>/<code>ADD INDEX</code>는 신규 데이터만 → 기존 데이터는 <strong>MATERIALIZE</strong> 필수</li>
+<li>SummingMergeTree/ReplacingMergeTree는 <strong>merge 전 중복 공존</strong> → GROUP BY/FINAL로 조회</li>
+<li><code>parseDateTimeBestEffort</code>는 Apache 로그 형식(<code>16/Aug/2026:...</code>) 못 읽음 → <code>parseDateTime</code> + 포맷</li>
+<li>LEFT JOIN 미매칭은 NULL이 아니라 <strong>타입 기본값</strong>(0, '') — NULL 원하면 <code>join_use_nulls=1</code></li>
+<li>배열 인덱스는 <strong>1부터</strong></li>
+<li>한글 별칭은 백틱 필수: `<code>AS </code>이름<code> </code>`</li>
+<li>CSV에 헤더 있으면 <code>CSV</code>가 아니라 <strong><code>CSVWithNames</code></strong></li>
+<li>텍스트 포맷 스키마 추론은 Nullable(Int64)로 나옴 → 테이블은 직접 작은 타입으로 선언</li>
+<li>파라미터형 집계의 Merge에도 파라미터 반복: <code>quantilesMerge(0.5, 0.9)(col)</code> — 빠뜨리면 에러</li>
+<li><strong>MV의 GROUP BY가 대상 ORDER BY보다 세밀하면 행이 소실된다</strong> (에러 없음) — 키 일치 필수</li>
+<li>CTE는 <strong>참조할 때마다 재실행</strong> — 무거운 CTE는 <code>AS MATERIALIZED</code> 고려</li>
+<li>Dictionary <code>LIFETIME(0)</code> = 갱신 끔 / <code>MIN 0 MAX 300</code> = 무작위 주기 갱신 (반대로 알기 쉬움)</li>
+<li>ClickHouse Cloud에서는 <code>file()</code> 불가 → s3()/url()로 대체</li>
+<li><code>position('대상','찾을것')</code> vs <code>locate('찾을것','대상')</code> — 인자 순서 반대</li>
+<li>LowCardinality는 고유값 <strong>10만 초과 시 역효과</strong> — user_id·URL에 쓰지 말 것</li>
+<li>뮤테이션은 순차 실행 — 실패한 뮤테이션 하나가 <strong>큐 전체를 막는다</strong> (system.mutations 확인)</li>
+</ol>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="19-mock-exam.html"><span class="pn-label">← 이전</span><span class="pn-title">19장 · 모의고사</span></a><span></span></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

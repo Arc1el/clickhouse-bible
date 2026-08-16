@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>16장 · 쿼리 성능 분석 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a class="active" href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a class="active" href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>16장. 쿼리 성능 분석 — EXPLAIN과 system 테이블</h1>
+<blockquote>
+<p>최적화 도구(12~14장)를 "언제, 왜" 쓰는지 판단하려면 측정부터 해야 한다.</p>
+<p>이 장은 시험에서 내 답을 검증하는 도구이자, 실무 튜닝의 출발점이다.</p>
+</blockquote>
+<h2 id="s1">16.1 쿼리 실행 통계 읽기</h2>
+<p>clickhouse-client로 쿼리를 실행하면 마지막 줄에 통계가 나온다:</p>
+<pre class="code" data-lang="text"><code>5 rows in set. Elapsed: 0.012 sec. Processed 1.00 million rows, 8.00 MB
+(83.3 million rows/s, 666.4 MB/s)</code></pre>
+<ul>
+<li><strong>Processed rows가 결과 행 수보다 터무니없이 크면</strong> → 인덱스가 안 먹고 있다는 신호</li>
+<li>순수 쿼리 시간만 재려면 출력 비용 제거: <code>SELECT ... FORMAT Null</code></li>
+</ul>
+<h2 id="s2">16.2 EXPLAIN 가족</h2>
+<pre class="code" data-lang="sql"><code>EXPLAIN SELECT ...;              -- 논리 실행 계획 (기본 = EXPLAIN PLAN)
+EXPLAIN indexes = 1 SELECT ...;  -- ★ 인덱스 사용 내역 (아래)
+EXPLAIN ANALYZE SELECT ...;      -- ★ 실제 실행 + 단계별 실측치 (26.7+, 아래)
+EXPLAIN PIPELINE SELECT ...;     -- 물리 파이프라인 (스레드 구성)
+EXPLAIN ESTIMATE SELECT ...;     -- 읽을 행/granule 추정치
+EXPLAIN SYNTAX SELECT ...;       -- 최적화 후 재작성된 쿼리
+EXPLAIN AST SELECT ...;          -- 파싱 트리</code></pre>
+<blockquote>
+<p>참고: 26.7부터 EXPLAIN 기본 출력이 보기 좋은(pretty) 형식으로 바뀌었다.</p>
+<p>구버전 자료의 밋밋한 출력과 모양이 달라도 내용은 같다.</p>
+</blockquote>
+<h3 id="s3">EXPLAIN indexes = 1 — 시험에서 가장 중요한 하나 (26.8 실측)</h3>
+<pre class="code" data-lang="sql"><code>EXPLAIN indexes = 1
+SELECT count() FROM hits WHERE user_id = 42;</code></pre>
+<pre class="code" data-lang="text"><code>ReadFromMergeTree (default.hits)
+  Indexes:
+    PrimaryKey
+      Keys: user_id
+      Condition: (user_id in [42, 42])
+      Parts: 1/1
+      Granules: 1/12        ← 핵심 지표!
+      Search Algorithm: binary search</code></pre>
+<p>읽는 법:</p>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>의미</th></tr></thead><tbody><tr><td><code>Granules: 1/12</code></td><td>전체 12개 granule 중 1개만 읽음 — <strong>인덱스가 잘 작동</strong></td></tr><tr><td><code>Granules: 12/12</code></td><td>풀스캔 — ORDER BY 키로 필터하지 않았거나 키 설계가 잘못됨</td></tr><tr><td><code>Parts: x/y</code></td><td>part 수준에서 걸러진 정도 (파티션 pruning 포함)</td></tr><tr><td>Skip 인덱스 항목</td><td>13장의 skipping index가 쓰였는지, 얼마나 걸렀는지</td></tr><tr><td><code>ReadFromMergeTree (proj명)</code></td><td>projection이 선택되었다는 표시</td></tr></tbody></table></div>
+<h3 id="s4">EXPLAIN ANALYZE — 실측치가 붙는 실행 계획 (26.7+, 26.8 검증)</h3>
+<p>계획만 보여주는 EXPLAIN과 달리 <strong>쿼리를 실제로 실행하고</strong>(결과 행은 버림) 각 단계에 시간·행 수·병렬도를 주석으로 붙인다:</p>
+<pre class="code" data-lang="sql"><code>EXPLAIN ANALYZE SELECT type, count() FROM t GROUP BY type;</code></pre>
+<pre class="code" data-lang="text"><code>Query summary:
+  Time:        3.57 ms (planning 839.42 us · execution 2.73 ms)
+  Read:        1.00 million rows, 1.00 MB
+  Peak memory: 184.54 KiB
+...
+└──Aggregating
+   │  I/O: rows 1.00 million → 3 (0.00%)
+   │    Stage (partial aggregation): time 1.08 ms (39.5%) · parallelism 7.38/12
+...</code></pre>
+<ul>
+<li>각 단계의 <code>time (%)</code>로 <strong>어느 단계가 병목인지</strong> 바로 보인다</li>
+<li><code>parallelism 7.38/12</code> = 12스레드 중 평균 7.38개 활용. <code>0.9/12</code>처럼 낮으면 그 단계가 직렬 병목이라는 뜻</li>
+<li><code>EXPLAIN ANALYZE processors = 1</code>을 주면 프로세서별 시간 분포까지 출력</li>
+</ul>
+<h2 id="s5">16.3 system 테이블 — ClickHouse의 계기판</h2>
+<p>ClickHouse는 자기 상태를 전부 <code>system</code> 데이터베이스의 테이블로 노출한다. <strong>"SQL로 서버를 들여다본다"</strong> — 이 발상에 익숙해지면 운영이 쉬워진다.</p>
+<h3 id="s6">자주 쓰는 것들 (전부 26.8 검증)</h3>
+<pre class="code" data-lang="sql"><code>-- 테이블 크기·행 수·part 수
+SELECT count() AS parts, sum(rows) AS total_rows,
+       formatReadableSize(sum(bytes_on_disk)) AS disk
+FROM system.parts
+WHERE table = &#x27;big&#x27; AND active;
+
+-- 컬럼별 압축률 (어느 컬럼이 디스크를 먹나)
+SELECT column,
+       formatReadableSize(sum(column_data_compressed_bytes))   AS compressed,
+       formatReadableSize(sum(column_data_uncompressed_bytes)) AS uncompressed,
+       round(sum(column_data_uncompressed_bytes) / sum(column_data_compressed_bytes), 1) AS ratio
+FROM system.parts_columns
+WHERE table = &#x27;big&#x27; AND active
+GROUP BY column
+ORDER BY sum(column_data_compressed_bytes) DESC;
+
+-- 지금 실행 중인 쿼리
+SELECT query_id, user, elapsed, formatReadableSize(memory_usage) AS mem, query
+FROM system.processes;
+
+-- 느린 쿼리 찾기 (query_log는 서버 모드에서 기본 활성)
+SYSTEM FLUSH LOGS;   -- ① query_log는 버퍼링됨 — 방금 쿼리를 보려면 먼저 플러시
+SELECT
+    event_time, query_duration_ms,
+    read_rows, formatReadableSize(read_bytes) AS read,
+    formatReadableSize(memory_usage) AS mem,
+    substring(query, 1, 80) AS q
+FROM system.query_log
+WHERE type = &#x27;QueryFinish&#x27;
+  AND is_initial_query = 1   -- ② 서브쿼리/분산 하위 쿼리 행 제외 (공식 권장 상시 조건)
+ORDER BY query_duration_ms DESC
+LIMIT 10;
+
+-- 뮤테이션 진행 상황 (14장)
+SELECT * FROM system.mutations WHERE NOT is_done;
+
+-- 진행 중인 merge
+SELECT * FROM system.merges;</code></pre>
+<div class="tablewrap"><table><thead><tr><th>테이블</th><th>내용</th></tr></thead><tbody><tr><td><code>system.tables</code> / <code>system.columns</code></td><td>스키마 카탈로그</td></tr><tr><td><code>system.parts</code> / <code>system.parts_columns</code></td><td>part·컬럼 물리 상태 (크기·압축)</td></tr><tr><td><code>system.query_log</code></td><td>쿼리 이력 (튜닝의 금광)</td></tr><tr><td><code>system.processes</code></td><td>실행 중 쿼리</td></tr><tr><td><code>system.mutations</code> / <code>system.merges</code></td><td>백그라운드 작업</td></tr><tr><td><code>system.settings</code> / <code>system.merge_tree_settings</code></td><td>현재 설정값 + 설명</td></tr><tr><td><code>system.dictionaries</code></td><td>사전 상태 (7장)</td></tr><tr><td><code>system.replicas</code> / <code>system.clusters</code></td><td>복제·클러스터 상태 (17장)</td></tr><tr><td><code>system.functions</code></td><td>함수 목록 (이름 검색용)</td></tr></tbody></table></div>
+<h2 id="s7">16.4 설정(settings) 다루기</h2>
+<pre class="code" data-lang="sql"><code>-- 세션 전체에 적용
+SET max_threads = 8;
+
+-- 쿼리 하나에만 적용 (시험에서 애용하라)
+SELECT count() FROM big_table
+SETTINGS max_threads = 4, max_memory_usage = 10000000000;
+
+-- 현재 값과 설명 확인
+SELECT name, value, description FROM system.settings WHERE name = &#x27;max_threads&#x27;;
+SELECT getSetting(&#x27;max_threads&#x27;);</code></pre>
+<p>자주 만나는 설정:</p>
+<div class="tablewrap"><table><thead><tr><th>설정</th><th>의미</th></tr></thead><tbody><tr><td><code>max_threads</code></td><td>쿼리 병렬 스레드 수 (기본: 코어 수)</td></tr><tr><td><code>max_memory_usage</code></td><td>쿼리당 메모리 한도</td></tr><tr><td><code>max_execution_time</code></td><td>쿼리 시간 제한(초)</td></tr><tr><td><code>join_use_nulls</code></td><td>JOIN 미매칭을 기본값 대신 NULL로</td></tr><tr><td><code>mutations_sync</code></td><td>뮤테이션 완료 대기 (14장)</td></tr><tr><td><code>async_insert</code></td><td>비동기 삽입 (8장)</td></tr><tr><td><code>use_skip_indexes</code></td><td>skipping index 사용 여부 (비교 실험용)</td></tr><tr><td><code>force_optimize_projection</code></td><td>projection 강제 (검증용, 13장)</td></tr></tbody></table></div>
+<h2 id="s8">16.5 최적화 사고 순서 (공식 best practice 요약)</h2>
+<p>느린 쿼리를 만나면 이 순서로 점검한다:</p>
+<ol>
+<li><strong>ORDER BY 키로 필터하고 있는가?</strong> → <code>EXPLAIN indexes=1</code>에서 Granules 비율 확인. 아니라면 쿼리를 키에 맞추거나, 키를 재설계하거나, projection(13장)</li>
+<li><strong>필요한 컬럼만 SELECT하는가?</strong> <code>SELECT *</code>는 컬럼 지향의 이점을 버리는 행위</li>
+<li><strong>같은 집계를 반복 계산하는가?</strong> → Materialized View(12장)로 사전 계산</li>
+<li><strong>문자열 컬럼이 저카디널리티인가?</strong> → LowCardinality(4장)</li>
+<li><strong>JOIN이 큰가?</strong> → 작은 테이블을 오른쪽에, 참조 조회는 Dictionary(7장)</li>
+<li><strong>PREWHERE 활용</strong> — MergeTree는 WHERE 조건 일부를 자동으로 PREWHERE로 옮겨 "조건 컬럼 먼저 읽고 통과한 granule만 나머지 컬럼을 읽는" 2단계 필터를 한다. 대부분 자동이므로 건드릴 일은 없지만, EXPLAIN에서 보이면 그 의미를 알아야 한다</li>
+<li><strong>part가 너무 많지 않은가?</strong> → 배치 삽입(8장), 파티션 재설계(5장)</li>
+</ol>
+<h2 id="s9">16.6 벤치마크 습관</h2>
+<p>공식 권고: <strong>캐시를 실제로 끄고</strong> 재라 (여러 번 실행하면 warm 캐시 상태를 재는 것이다). 그리고 <strong>최적화는 한 번에 하나씩</strong> 적용해야 효과를 분리할 수 있다.</p>
+<pre class="code" data-lang="sql"><code>-- 캐시 영향 제거
+SET enable_filesystem_cache = 0;
+SYSTEM DROP MARK CACHE;
+SYSTEM DROP UNCOMPRESSED CACHE;
+
+-- 출력 비용 제거하고 순수 실행만 측정
+SELECT count() FROM big WHERE tag = &#x27;web&#x27; FORMAT Null;
+
+-- 두 방식 비교: 설정으로 끄고 켜며 Processed rows 비교
+SELECT count() FROM logs WHERE level = &#x27;ERROR&#x27; SETTINGS use_skip_indexes = 0;
+SELECT count() FROM logs WHERE level = &#x27;ERROR&#x27; SETTINGS use_skip_indexes = 1;</code></pre>
+<p>시험에서도 과제를 풀고 나서 <code>EXPLAIN indexes = 1</code>로 <strong>의도한 인덱스/projection이 실제로 쓰이는지 확인</strong>하는 습관이 점수를 지킨다.</p>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="15-other-engines-kafka.html"><span class="pn-label">← 이전</span><span class="pn-title">15장 · 기타 테이블 엔진과 스트리밍 연동</span></a><a class="pn next" href="17-replication-scaling.html"><span class="pn-label">다음 →</span><span class="pn-title">17장 · 복제와 샤딩</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

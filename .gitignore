@@ -1,0 +1,10 @@
+# ClickHouse 단일 바이너리 (706MB — GitHub 100MB 제한 초과, 저장소에 넣지 말 것)
+/clickhouse
+
+# 실습 데이터 디렉토리
+/practice/
+/mock_exam_data/
+*.parquet
+
+# OS
+.DS_Store

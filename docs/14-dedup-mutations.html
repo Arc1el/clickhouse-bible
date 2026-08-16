@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>14장 · 중복 제거와 뮤테이션 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a class="active" href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a class="active" href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>14장. 중복 제거와 뮤테이션 — 시험 영역 5</h1>
+<blockquote>
+<p>OLAP DB인 ClickHouse에서 UPDATE/DELETE는 "예외적 작업"이다. 그래서 전용 패턴이</p>
+<p>발달했고, 시험 영역 5가 통째로 여기에 할당돼 있다: lightweight delete,</p>
+<p>ReplacingMergeTree upsert, CollapsingMergeTree 업데이트.</p>
+</blockquote>
+<h2 id="s1">14.1 왜 UPDATE가 어려운가 (5장 복습)</h2>
+<p>part는 불변(immutable)이다. 행 하나를 고치려면 그 행이 든 part 전체를 다시 써야 한다. 그래서 ClickHouse의 답은 세 갈래다:</p>
+<ol>
+<li><strong>지우기</strong>: lightweight DELETE / ALTER DELETE</li>
+<li><strong>덮어쓰기(upsert)</strong>: 새 버전을 INSERT하고, 조회·merge 때 최신만 남기기 — ReplacingMergeTree</li>
+<li><strong>상쇄하기</strong>: 취소 행(-1)과 새 행(+1)을 INSERT — CollapsingMergeTree</li>
+</ol>
+<h2 id="s2">14.2 Lightweight DELETE — <code>DELETE FROM</code></h2>
+<pre class="code" data-lang="sql"><code>DELETE FROM events WHERE user_id = 104;</code></pre>
+<ul>
+<li>동작: 행을 즉시 지우는 게 아니라 <strong>숨김 표시</strong>(내부 <code>_row_exists</code> 마스크)만 한다. 이후 SELECT에는 안 보이고, 실제 제거는 백그라운드 merge가 수행</li>
+<li>"lightweight(가벼운)"은 <strong>표시 단계</strong>가 가볍다는 뜻 — 대량으로 자주 쓰면 여전히 부담</li>
+<li>MergeTree 계열에서 동작. 자주 쓰는 삭제 패턴이 "오래된 데이터 정리"라면 DELETE보다 <strong>TTL이나 DROP PARTITION</strong>이 정답이다 (훨씬 저렴)</li>
+</ul>
+<p>⚠️ 실측된 함정 (13장 참조): <strong>projection이 있는 테이블에서는 기본 설정상 거부된다.</strong></p>
+<pre class="code" data-lang="sql"><code>ALTER TABLE events MODIFY SETTING lightweight_mutation_projection_mode = &#x27;rebuild&#x27;;
+DELETE FROM events WHERE user_id = 104;   -- 이제 동작</code></pre>
+<h3 id="s3">Lightweight UPDATE (베타)</h3>
+<p><code>UPDATE 테이블 SET ... WHERE ...</code> 문이 25.7에 도입됐고 2026년 8월 현재 공식 상태는 <strong>베타</strong>다. 패치 part(변경분만 담은 작은 part) 방식으로 동작하며, 전제조건이 있다 — 테이블에 두 설정을 켜야 한다 (26.8 실측 검증):</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE up (id UInt32, v String)
+ENGINE = MergeTree ORDER BY id
+SETTINGS enable_block_number_column = 1, enable_block_offset_column = 1;
+
+UPDATE up SET v = &#x27;new&#x27; WHERE id = 1;   -- 동작 확인</code></pre>
+<p>제약: PK/파티션 키 갱신 불가, 대량(테이블의 10% 초과) 갱신 비권장, 패치 part가 남아 있는 동안 skipping index·projection 미적용 + SELECT에 수 % 오버헤드. 시험 대비로는 아래의 전통 3종(ALTER UPDATE / Replacing / Collapsing)이 우선이다.</p>
+<h2 id="s4">14.3 뮤테이션 — <code>ALTER TABLE ... DELETE / UPDATE</code></h2>
+<p>무거운 정통 방식. <strong>조건에 걸린 part 전체를 재작성</strong>한다.</p>
+<pre class="code" data-lang="sql"><code>ALTER TABLE events DELETE WHERE user_id = 104;
+ALTER TABLE events UPDATE url = &#x27;/renamed&#x27; WHERE url = &#x27;/old&#x27;;
+
+-- 기본은 비동기 실행. 완료를 기다리려면:
+ALTER TABLE events DELETE WHERE user_id = 104
+SETTINGS mutations_sync = 1;    -- 1: 현재 서버 완료 대기, 2: 전체 레플리카 대기
+
+-- 진행 상황 확인: latest_fail_reason이 차 있으면 그 뮤테이션이 큐를 막고 있는 것
+SELECT database, table, mutation_id, command, parts_to_do, latest_fail_reason
+FROM system.mutations WHERE NOT is_done ORDER BY create_time;
+
+-- 중단: 반드시 database/table로 범위를 좁혀라 (mutation_id는 테이블마다 겹친다!)
+KILL MUTATION WHERE database = &#x27;default&#x27; AND table = &#x27;events&#x27;
+                AND mutation_id = &#x27;mutation_5.txt&#x27;;</code></pre>
+<ul>
+<li>⚠️ <strong>primary key와 파티션 키 계산에 쓰이는 컬럼은 UPDATE할 수 없다</strong> (<code>PARTITION BY toYYYYMM(created_at)</code>이면 created_at도 불가)</li>
+<li>뮤테이션은 스케줄일 뿐 즉시 반영이 아니다 — 시험에서 결과 검증 전에 <code>mutations_sync = 1</code>을 붙이는 습관을 들여라</li>
+<li>뮤테이션은 <strong>생성 순서대로 처리</strong>된다 — 앞 뮤테이션이 실패하면 뒤가 영원히 대기한다 (lightweight DELETE도 내부적으로 뮤테이션이라 같은 큐에 막힌다)</li>
+<li>KILL은 되돌리기가 아니다 — 공식 문구: "이미 적용된 변경은 롤백되지 않는다." 일부만 적용된 상태가 남을 수 있다</li>
+</ul>
+<h2 id="s5">14.4 ReplacingMergeTree — upsert의 표준 ★★★</h2>
+<p><strong>같은 ORDER BY 키를 가진 행들 중 하나만 남기고 제거</strong>하는 MergeTree. "INSERT만으로 UPDATE 효과"를 내는 ClickHouse식 upsert다.</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE user_profiles (
+    user_id    UInt32,
+    email      String,
+    plan       LowCardinality(String),
+    updated_at DateTime
+) ENGINE = ReplacingMergeTree(updated_at)   -- ver 컬럼: 최댓값 행이 승자
+ORDER BY user_id;                           -- 이 키가 같으면 &quot;중복&quot;
+
+-- 갱신 = 그냥 새 버전을 INSERT
+INSERT INTO user_profiles VALUES (101, &#x27;a@x.com&#x27;, &#x27;free&#x27;, &#x27;2026-08-01 00:00:00&#x27;);
+INSERT INTO user_profiles VALUES (101, &#x27;a@x.com&#x27;, &#x27;pro&#x27;,  &#x27;2026-08-05 00:00:00&#x27;);</code></pre>
+<ul>
+<li><code>ReplacingMergeTree(ver)</code> — ver(버전 컬럼) 최댓값 행이 남는다. 생략하면 "마지막에 삽입된 행"이 남는데, 순서 보장이 약하므로 <strong>ver 명시를 권장</strong></li>
+<li>⚠️ <strong>핵심 이해: 중복 제거는 백그라운드 merge 때 일어난다.</strong> merge 전에는 두 행이 공존한다 — "언젠가(eventually)" 중복 제거</li>
+</ul>
+<h3 id="s6">조회 시점 중복 제거 — 두 가지 방법 (실측 검증)</h3>
+<pre class="code" data-lang="sql"><code>-- 방법 1: FINAL — 읽으면서 즉석 병합. 간편하지만 대규모에선 비용 큼
+SELECT * FROM user_profiles FINAL WHERE user_id = 101;
+
+-- 방법 2: argMax — GROUP BY로 최신값 선택. 대규모에서 예측 가능
+SELECT
+    user_id,
+    argMax(email, updated_at) AS email,   -- updated_at이 최대인 행의 email
+    argMax(plan,  updated_at) AS plan,
+    max(updated_at)           AS updated_at
+FROM user_profiles
+GROUP BY user_id;</code></pre>
+<p>둘 다 <code>plan = 'pro'</code>를 반환한다. FINAL은 23.12+의 범위 분할 최적화(병합이 필요 없는 구간과 필요한 구간을 나눠 처리) 덕에 과거만큼 느리지 않다 — 공식 벤치마크 기준 약 2.4배 개선. 추가로 <code>do_not_merge_across_partitions_select_final = 1</code>을 켜면 파티션을 서로 독립적으로 처리해 더 빨라지지만, ⚠️ <strong>같은 키의 모든 버전이 반드시 같은 파티션에 들어간다는 보장이 있을 때만</strong> 켜야 한다 (<code>PARTITION BY toYYYYMM(updated_at)</code> 처럼 버전마다 파티션이 바뀔 수 있는 키에서는 조용히 틀린 결과가 나온다). 초대형 테이블·고QPS 조회라면 argMax 패턴이 여전히 안전하다.</p>
+<h3 id="s7">삭제 표시 — is_deleted (신형)</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE t (
+    key UInt32, value String, ver UInt64, is_deleted UInt8
+) ENGINE = ReplacingMergeTree(ver, is_deleted)   -- 두 번째 인자
+ORDER BY key;
+
+INSERT INTO t VALUES (1, &#x27;hello&#x27;, 1, 0);
+INSERT INTO t VALUES (1, &#x27;hello&#x27;, 2, 1);   -- 삭제 표시 (tombstone)
+SELECT * FROM t FINAL;                     -- 0행 — 삭제된 것으로 처리</code></pre>
+<p>⚠️ FINAL에서 안 보일 뿐 <strong>디스크에서 지워진 것은 아니다</strong> — 공식 문서 기준, merge 후에도 기본적으로 삭제 표시 행(tombstone)이 최종 버전으로 보존된다. 물리 삭제까지 하려면 <code>allow_experimental_replacing_merge_with_cleanup = 1</code> 설정 후 <code>OPTIMIZE TABLE t FINAL CLEANUP</code>을 쓰는데, CLEANUP은 삭제 이력 자체를 지우므로 <strong>더 오래된 버전의 행이 뒤늦게 도착하면 삭제된 행이 부활</strong>하는 부작용이 있다.</p>
+<h2 id="s8">14.5 CollapsingMergeTree — 취소·상쇄 방식 ★★</h2>
+<p>행 상태가 자주 바뀌고, <strong>merge 전에도 정확한 집계</strong>가 필요할 때 쓴다. <code>sign Int8</code> 컬럼에 상태 행은 <code>+1</code>, 취소 행은 <code>-1</code>을 기록한다.</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE cart_state (
+    user_id    UInt32,
+    item_count UInt32,
+    total      UInt32,
+    sign       Int8
+) ENGINE = CollapsingMergeTree(sign)
+ORDER BY user_id;
+
+-- 최초 상태: 장바구니 2개 15,000원
+INSERT INTO cart_state VALUES (201, 2, 15000, 1);
+
+-- 상태 변경: &quot;이전 상태 취소&quot; + &quot;새 상태&quot;를 한 번에 INSERT
+INSERT INTO cart_state VALUES
+    (201, 2, 15000, -1),   -- ⚠️ 취소 행은 원본과 값이 완전히 같아야 한다 (sign만 반대)
+    (201, 3, 22000, 1);</code></pre>
+<p>merge 때 같은 키의 +1/-1 쌍이 상쇄되어 사라진다. 조회는 <strong>merge 여부와 무관하게 정확한</strong> 다음 패턴으로:</p>
+<pre class="code" data-lang="sql"><code>SELECT
+    user_id,
+    sum(item_count * sign) AS item_count,   -- 취소 행이 음수로 빠짐
+    sum(total * sign)      AS total
+FROM cart_state
+GROUP BY user_id
+HAVING sum(sign) &gt; 0;                        -- 완전히 취소된 키 제외
+-- 201 | 3 | 22000  (실측)</code></pre>
+<ul>
+<li>애플리케이션이 <strong>직전 상태를 알아야</strong> 취소 행을 만들 수 있다 — 이것이 운영 부담</li>
+<li>INSERT 순서가 섞이면(취소가 먼저 도착) 정합이 깨질 수 있다 → 그 경우 <code>VersionedCollapsingMergeTree(sign, version)</code>을 쓴다 (버전으로 순서 판정, 실측 검증)</li>
+</ul>
+<h2 id="s9">14.6 INSERT 시점 중복 방지</h2>
+<p>같은 데이터 블록을 실수로 두 번 INSERT하면? <strong>Replicated/Cloud 테이블은 최근 삽입 블록의 해시(기본 1만 개, 1시간)를 기억해 재삽입을 무시한다</strong> — 재시도 시 정확히 같은 블록을 보내면 안전하다.</p>
+<p>⚠️ <strong>로컬 단일 노드의 일반 MergeTree는 사실상 꺼져 있다</strong> — <code>non_replicated_deduplication_window</code> 기본값이 0이기 때문이다. <code>clickhouse local</code> 실습에서 "재시도했더니 중복이 생겼다"면 이것이 원인이다. 켜려면:</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE t (...) ENGINE = MergeTree ORDER BY id
+SETTINGS non_replicated_deduplication_window = 100;</code></pre>
+<p>임의 기준의 중복 방지는 <code>insert_deduplication_token</code>으로 한다. 단, <strong>토큰이 내용 해시보다 우선</strong>하므로 같은 토큰으로 다른 데이터를 보내면 <strong>에러 없이 조용히 버려진다</strong> — 토큰은 배치마다 고유하게(파일명+오프셋, Kafka의 topic-partition-offset, 배치 UUID) 만들어야 한다.</p>
+<h3 id="s10">OPTIMIZE TABLE ... FINAL — 최후의 수단</h3>
+<p>수동 merge로 중복을 즉시 정리할 수 있지만, 이 명령은 merge 크기 안전장치를 무시하고 파티션을 단일 거대 part로 합친다. 한번 만들어진 거대 part는 <strong>이후 자동 merge에서 사실상 배제되어 그 파티션의 중복 제거가 멈춘다.</strong> 공식 가이드: cron에 넣지 말 것, "too many parts"의 해결책이 아님. 허용되는 용법은 더 이상 쓰기가 없는 닫힌 파티션의 1회성 정리뿐이다:</p>
+<pre class="code" data-lang="sql"><code>OPTIMIZE TABLE events PARTITION 202508 FINAL;
+OPTIMIZE TABLE t FINAL SETTINGS optimize_throw_if_noop = 1;  -- 실제 merge 여부 확인</code></pre>
+<h2 id="s11">14.7 선택 가이드 (시험 최종 정리)</h2>
+<div class="tablewrap"><table><thead><tr><th>요구사항</th><th>정답</th></tr></thead><tbody><tr><td>오래된 데이터 정기 삭제</td><td>TTL / DROP PARTITION</td></tr><tr><td>가끔 소량 행 삭제</td><td>lightweight DELETE (<code>DELETE FROM</code>)</td></tr><tr><td>대량 일괄 수정/삭제 (드물게)</td><td>ALTER UPDATE / DELETE (뮤테이션)</td></tr><tr><td>최신 상태만 유지 (upsert), 즉시성 불필요</td><td><strong>ReplacingMergeTree</strong> + FINAL/argMax</td></tr><tr><td>컬럼별로 도착 시점이 다른 최신값 병합 (IoT 텔레메트리 등)</td><td><strong>CoalescingMergeTree</strong> (25.6+) — 컬럼 단위로 최신 non-NULL 값 유지</td></tr><tr><td>빈번한 상태 변경 + merge 전에도 정확한 집계</td><td><strong>CollapsingMergeTree</strong> (sign 패턴)</td></tr><tr><td>순서가 뒤섞일 수 있는 상태 변경</td><td>VersionedCollapsingMergeTree</td></tr><tr><td>GDPR류 "이 사용자 데이터 전부 삭제"</td><td>뮤테이션 (완전 삭제 보장)</td></tr></tbody></table></div>
+<p>CoalescingMergeTree 예 (26.8 실측 — ReplacingMergeTree였다면 두 번째 INSERT에서 battery가 NULL로 덮였을 것):</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE ev_state (vin String, battery Nullable(UInt8), lat Nullable(Float64))
+ENGINE = CoalescingMergeTree ORDER BY vin;
+
+INSERT INTO ev_state VALUES (&#x27;V1&#x27;, 80, NULL);
+INSERT INTO ev_state (vin, lat) VALUES (&#x27;V1&#x27;, 37.5);
+SELECT * FROM ev_state FINAL;   -- V1 | 80 | 37.5  (battery 유지!)</code></pre>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="13-projections-skipping-indexes.html"><span class="pn-label">← 이전</span><span class="pn-title">13장 · Projection과 Data Skipping Index</span></a><a class="pn next" href="15-other-engines-kafka.html"><span class="pn-label">다음 →</span><span class="pn-title">15장 · 기타 테이블 엔진과 스트리밍 연동</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

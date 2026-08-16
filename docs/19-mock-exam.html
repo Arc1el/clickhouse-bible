@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>19장 · 모의고사 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a class="active" href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a class="active" href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>19장. 모의고사 — 실전 형식 12과제</h1>
+<blockquote>
+<p>실제 시험과 동일하게 <strong>과제 수행형</strong>이다. 2시간 타이머를 켜고, 공식 문서만 참고하며</p>
+<p>풀어볼 것. 모든 해답은 ClickHouse 26.8 <code>clickhouse local</code>에서 검증되었다.</p>
+</blockquote>
+<h2 id="s1">준비: 실습 데이터 만들기</h2>
+<p>작업 폴더에 아래 CSV 파일을 만든다 (<code>events.csv</code>):</p>
+<pre class="code" data-lang="csv"><code>event_time,user_id,event_type,page_url,duration_ms,country
+2026-08-01 09:00:00,101,view,/home,340,KR
+2026-08-01 09:01:12,101,view,/products/1,1200,KR
+2026-08-01 09:02:30,102,view,/home,220,US
+2026-08-01 09:05:00,102,purchase,/checkout,4500,US
+2026-08-01 10:00:00,103,view,/products/2,800,JP
+2026-08-02 11:00:00,101,purchase,/checkout,3200,KR
+2026-08-02 11:30:00,104,view,/home,150,US
+2026-08-02 12:00:00,104,view,/products/1,950,US</code></pre>
+<p>세션을 유지하려면(테이블이 사라지지 않게) <code>--path</code>로 데이터 디렉토리를 지정해 실행한다:</p>
+<pre class="code" data-lang="bash"><code>./clickhouse local --path ./mock_exam_data</code></pre>
+<hr>
+<h2 id="s2">과제 (먼저 풀어보기)</h2>
+<p><strong>[과제 1 — 데이터 모델링]</strong> <code>shop</code> 데이터베이스를 만들고, 위 CSV 구조에 맞는 <code>shop.events</code> 테이블을 만들어라. 조건: ① 각 컬럼에 가장 효율적인 타입을 쓸 것 (<code>event_type</code>과 <code>country</code>는 종류가 적은 문자열이다) ② 주요 쿼리가 "특정 event_type의 시간 범위 조회"이므로 이에 맞는 ORDER BY를 정할 것.</p>
+<p><strong>[과제 2 — 파일 삽입]</strong> <code>events.csv</code>를 <code>shop.events</code>에 삽입하라. (헤더 있음에 주의)</p>
+<p><strong>[과제 3 — 삽입 중 변환]</strong> <code>shop.events_clean</code> 테이블을 만들되 <code>duration_ms</code> 대신 초 단위 <code>duration_sec Float32</code> 컬럼을 두고, CSV에서 읽으며 ① ms→초 변환 ② <code>page_url</code> 소문자화를 적용해 삽입하라.</p>
+<p><strong>[과제 4 — 분석: 문자열/시간]</strong> URL이 <code>/products/</code>로 시작하는 조회(view)를 <strong>시간(hour) 단위</strong>로 집계하라.</p>
+<p><strong>[과제 5 — 분석: 집계]</strong> 국가별로 ① 정확한 고유 사용자 수 ② 체류시간 중위값(p50)을 구하라.</p>
+<p><strong>[과제 6 — 비집계 MV]</strong> <code>purchase</code> 이벤트만 실시간으로 복사되는 Materialized View와 대상 테이블 <code>shop.purchases</code>를 만들어라. 새 purchase를 INSERT해서 자동 반영을 확인하라.</p>
+<p><strong>[과제 7 — 집계 MV]</strong> 일자별 ① 고유 사용자 수 ② 이벤트 수를 저장하는 <code>AggregatingMergeTree</code> 테이블 + MV를 만들어라. 조회 쿼리까지 작성할 것.</p>
+<p><strong>[과제 8 — Projection]</strong> <code>shop.events</code>는 <code>event_type</code> 기준으로 정렬돼 있어 <code>user_id</code> 검색이 느리다. <code>user_id</code>로 정렬된 projection을 추가하고 기존 데이터에 적용(materialize)하라.</p>
+<p><strong>[과제 9 — Skipping Index]</strong> <code>country</code> 컬럼에 <code>set</code> 타입 skipping index를 추가하고 기존 데이터에 적용하라.</p>
+<p><strong>[과제 10 — Lightweight DELETE]</strong> 사용자 104의 이벤트를 lightweight delete로 지워라. (힌트: 과제 8에서 projection을 만들었다면 그냥은 안 된다 — 왜 안 되는지, 어떻게 해결하는지가 진짜 문제다.)</p>
+<p><strong>[과제 11 — ReplacingMergeTree]</strong> 사용자 프로필(<code>user_id, email, plan, updated_at</code>)을 upsert 방식으로 관리하는 테이블을 만들어라. 같은 user_id로 두 번 INSERT한 뒤 <strong>최신 값만</strong> 조회하는 쿼리를 두 가지 방법(FINAL, argMax)으로 작성하라.</p>
+<p><strong>[과제 12 — CollapsingMergeTree]</strong> 장바구니 현재 상태(<code>user_id, item_count, total</code>)를 CollapsingMergeTree로 관리하라. 상태 변경(2개 15,000원 → 3개 22,000원) 시나리오를 수행하고 현재 상태를 올바르게 집계하는 쿼리를 작성하라.</p>
+<hr>
+<h2 id="s3">해답</h2>
+<h3 id="s4">과제 1 — 데이터베이스와 테이블</h3>
+<pre class="code" data-lang="sql"><code>CREATE DATABASE shop;
+
+CREATE TABLE shop.events (
+    event_time  DateTime,
+    user_id     UInt32,
+    event_type  LowCardinality(String),
+    page_url    String,
+    duration_ms UInt32,
+    country     LowCardinality(String)
+) ENGINE = MergeTree
+ORDER BY (event_type, event_time);</code></pre>
+<p>채점 포인트:</p>
+<ul>
+<li><code>user_id</code>, <code>duration_ms</code>: 음수가 없으므로 <strong>UInt</strong> 계열. 42억까지 충분하면 UInt32.</li>
+<li><code>event_type</code>, <code>country</code>: 고유값이 적은 문자열 → <strong>LowCardinality(String)</strong>.</li>
+<li>ORDER BY는 쿼리 패턴("특정 event_type의 시간 범위") 그대로 <code>(event_type, event_time)</code> — <strong>카디널리티 낮은 컬럼을 앞에</strong>.</li>
+</ul>
+<h3 id="s5">과제 2 — CSV 삽입</h3>
+<pre class="code" data-lang="sql"><code>INSERT INTO shop.events
+SELECT * FROM file(&#x27;events.csv&#x27;, &#x27;CSVWithNames&#x27;);
+
+SELECT count() FROM shop.events;   -- 8</code></pre>
+<p>헤더가 있으므로 포맷은 <code>CSV</code>가 아니라 <strong><code>CSVWithNames</code></strong>. (clickhouse local에서는 현재 디렉토리 기준 상대 경로, 서버에서는 <code>user_files</code> 디렉토리 기준이다.)</p>
+<h3 id="s6">과제 3 — 삽입 중 변환</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE shop.events_clean (
+    event_time   DateTime,
+    user_id      UInt32,
+    event_type   LowCardinality(String),
+    page_url     String,
+    duration_sec Float32,
+    country      LowCardinality(String)
+) ENGINE = MergeTree
+ORDER BY event_time;
+
+INSERT INTO shop.events_clean
+SELECT
+    event_time,
+    user_id,
+    event_type,
+    lower(page_url),
+    duration_ms / 1000,
+    country
+FROM file(&#x27;events.csv&#x27;, &#x27;CSVWithNames&#x27;);</code></pre>
+<p><code>INSERT INTO ... SELECT</code>가 "삽입 중 변환"의 표준 패턴이다. SELECT 절에서 이름 변경·타입 변환·계산을 전부 처리한다.</p>
+<h3 id="s7">과제 4 — 문자열 검색 + 시간 버킷</h3>
+<pre class="code" data-lang="sql"><code>SELECT
+    toStartOfHour(event_time) AS hour,
+    count() AS product_views
+FROM shop.events
+WHERE page_url LIKE &#x27;/products/%&#x27;
+  AND event_type = &#x27;view&#x27;
+GROUP BY hour
+ORDER BY hour;</code></pre>
+<pre class="code" data-lang="text"><code>2026-08-01 09:00:00 | 1
+2026-08-01 10:00:00 | 1
+2026-08-02 12:00:00 | 1</code></pre>
+<p><code>LIKE '/products/%'</code> 대신 <code>startsWith(page_url, '/products/')</code>도 정답.</p>
+<h3 id="s8">과제 5 — 집계</h3>
+<pre class="code" data-lang="sql"><code>SELECT
+    country,
+    uniqExact(user_id)          AS users,
+    quantile(0.5)(duration_ms)  AS median_ms
+FROM shop.events
+GROUP BY country
+ORDER BY users DESC;</code></pre>
+<pre class="code" data-lang="text"><code>US | 2 | 585
+KR | 1 | 1200
+JP | 1 | 800</code></pre>
+<p>"정확한" 고유 수를 요구하면 <code>uniq</code>(근사)가 아니라 <strong><code>uniqExact</code></strong>. 분위수 함수의 문법은 <code>quantile(0.5)(컬럼)</code> — 괄호가 두 쌍이다.</p>
+<h3 id="s9">과제 6 — 비집계 Materialized View</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE shop.purchases (
+    event_time DateTime,
+    user_id    UInt32,
+    page_url   String
+) ENGINE = MergeTree
+ORDER BY event_time;
+
+CREATE MATERIALIZED VIEW shop.purchases_mv
+TO shop.purchases AS
+SELECT event_time, user_id, page_url
+FROM shop.events
+WHERE event_type = &#x27;purchase&#x27;;
+
+-- 확인: 새 purchase 삽입 → 자동 반영
+INSERT INTO shop.events VALUES
+    (&#x27;2026-08-03 09:00:00&#x27;, 105, &#x27;purchase&#x27;, &#x27;/checkout&#x27;, 2100, &#x27;KR&#x27;);
+
+SELECT count() FROM shop.purchases;   -- 1</code></pre>
+<p>⚠️ <strong>MV는 생성 이후의 INSERT에만 반응한다.</strong> 기존 8행의 purchase 2건은 자동으로 들어가지 않는다. 기존 데이터까지 채우려면(백필):</p>
+<pre class="code" data-lang="sql"><code>INSERT INTO shop.purchases
+SELECT event_time, user_id, page_url
+FROM shop.events WHERE event_type = &#x27;purchase&#x27;;</code></pre>
+<h3 id="s10">과제 7 — 집계 MV (AggregatingMergeTree)</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE shop.daily_users (
+    day          Date,
+    users        AggregateFunction(uniq, UInt32),
+    events_count SimpleAggregateFunction(sum, UInt64)
+) ENGINE = AggregatingMergeTree
+ORDER BY day;
+
+CREATE MATERIALIZED VIEW shop.daily_users_mv
+TO shop.daily_users AS
+SELECT
+    toDate(event_time) AS day,
+    uniqState(user_id) AS users,
+    count()            AS events_count
+FROM shop.events
+GROUP BY day;
+
+-- 조회: State로 저장한 것은 반드시 Merge로 읽는다
+SELECT
+    day,
+    uniqMerge(users)  AS unique_users,
+    sum(events_count) AS total_events
+FROM shop.daily_users
+GROUP BY day
+ORDER BY day;</code></pre>
+<p>채점 포인트:</p>
+<ul>
+<li>쓰기: <code>uniqState(...)</code> / 읽기: <code>uniqMerge(...)</code> — <strong>State↔Merge 쌍</strong>.</li>
+<li>단순 합계는 <code>SimpleAggregateFunction(sum, UInt64)</code>로 충분 (조회 시 그냥 <code>sum()</code>).</li>
+<li>대상 테이블의 <code>ORDER BY day</code> = MV의 <code>GROUP BY day</code> (일치해야 병합 시 올바르게 합쳐진다).</li>
+</ul>
+<h3 id="s11">과제 8 — Projection</h3>
+<pre class="code" data-lang="sql"><code>ALTER TABLE shop.events
+    ADD PROJECTION by_user (SELECT * ORDER BY user_id);
+
+-- 기존 데이터에 적용 (mutations_sync=1: 완료까지 대기)
+ALTER TABLE shop.events
+    MATERIALIZE PROJECTION by_user
+    SETTINGS mutations_sync = 1;
+
+-- projection이 실제 쓰이는지 강제 확인
+SELECT count() FROM shop.events
+WHERE user_id = 101
+SETTINGS force_optimize_projection = 1;</code></pre>
+<p><code>ADD PROJECTION</code>은 <strong>이후 삽입분에만</strong> 적용된다. 기존 part에 소급하려면 <code>MATERIALIZE PROJECTION</code>이 필수 — 시험 단골 함정.</p>
+<h3 id="s12">과제 9 — Skipping Index</h3>
+<pre class="code" data-lang="sql"><code>ALTER TABLE shop.events
+    ADD INDEX country_idx country TYPE set(100) GRANULARITY 4;
+
+ALTER TABLE shop.events
+    MATERIALIZE INDEX country_idx
+    SETTINGS mutations_sync = 1;
+
+SELECT count() FROM shop.events WHERE country = &#x27;JP&#x27;;</code></pre>
+<p><code>set(100)</code>: granule마다 고유값을 최대 100개까지 저장, 초과 시 그 granule은 스킵 불가. projection과 마찬가지로 기존 데이터에는 <code>MATERIALIZE INDEX</code>가 필요하다.</p>
+<h3 id="s13">과제 10 — Lightweight DELETE (+ 함정)</h3>
+<pre class="code" data-lang="sql"><code>DELETE FROM shop.events WHERE user_id = 104;</code></pre>
+<p>과제 8의 projection이 있으면 이 쿼리는 <strong>에러가 난다</strong>:</p>
+<pre class="code" data-lang="text"><code>Code: 344. DB::Exception: DELETE query is not allowed for table shop.events
+because as it has projections and setting lightweight_mutation_projection_mode
+is set to THROW.</code></pre>
+<p>해결(택1):</p>
+<pre class="code" data-lang="sql"><code>-- ① 테이블 설정을 바꾼다 (rebuild: 삭제 후 projection 재구축, drop: projection 폐기)
+ALTER TABLE shop.events
+    MODIFY SETTING lightweight_mutation_projection_mode = &#x27;rebuild&#x27;;
+DELETE FROM shop.events WHERE user_id = 104;
+
+-- ② 뮤테이션 방식 DELETE를 쓴다 (projection 있어도 동작)
+ALTER TABLE shop.events DELETE WHERE user_id = 104
+SETTINGS mutations_sync = 1;</code></pre>
+<h3 id="s14">과제 11 — ReplacingMergeTree upsert</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE shop.user_profiles (
+    user_id    UInt32,
+    email      String,
+    plan       LowCardinality(String),
+    updated_at DateTime
+) ENGINE = ReplacingMergeTree(updated_at)
+ORDER BY user_id;
+
+INSERT INTO shop.user_profiles VALUES
+    (101, &#x27;a@x.com&#x27;, &#x27;free&#x27;, &#x27;2026-08-01 00:00:00&#x27;);
+INSERT INTO shop.user_profiles VALUES
+    (101, &#x27;a@x.com&#x27;, &#x27;pro&#x27;,  &#x27;2026-08-05 00:00:00&#x27;);
+
+-- 방법 1: FINAL (간편, 소규모에 적합)
+SELECT * FROM shop.user_profiles FINAL;
+
+-- 방법 2: argMax (대규모에서 더 예측 가능)
+SELECT
+    user_id,
+    argMax(email, updated_at) AS email,
+    argMax(plan,  updated_at) AS plan,
+    max(updated_at)           AS updated_at
+FROM shop.user_profiles
+GROUP BY user_id;</code></pre>
+<p>두 방법 모두 <code>plan = 'pro'</code>(2026-08-05 버전)를 돌려준다. 핵심 이해: <strong>중복 제거는 백그라운드 merge 시점에 일어나므로, merge 전에는 두 행이 공존한다.</strong> 그래서 조회 시 FINAL 또는 argMax로 "읽기 시점 중복 제거"를 해야 한다.</p>
+<h3 id="s15">과제 12 — CollapsingMergeTree</h3>
+<pre class="code" data-lang="sql"><code>CREATE TABLE shop.cart_state (
+    user_id    UInt32,
+    item_count UInt32,
+    total      UInt32,
+    sign       Int8
+) ENGINE = CollapsingMergeTree(sign)
+ORDER BY user_id;
+
+-- 최초 상태: 2개 15,000원
+INSERT INTO shop.cart_state VALUES (201, 2, 15000, 1);
+
+-- 상태 변경: 이전 상태 취소(-1) + 새 상태(+1)를 한 번에
+INSERT INTO shop.cart_state VALUES
+    (201, 2, 15000, -1),
+    (201, 3, 22000, 1);
+
+-- 현재 상태 조회: sign을 곱해서 집계
+SELECT
+    user_id,
+    sum(item_count * sign) AS item_count,
+    sum(total * sign)      AS total
+FROM shop.cart_state
+GROUP BY user_id
+HAVING sum(sign) &gt; 0;</code></pre>
+<pre class="code" data-lang="text"><code>201 | 3 | 22000</code></pre>
+<p>채점 포인트: ① 취소 행은 <strong>원본과 완전히 같은 값 + sign=-1</strong> ② 조회는 <code>sum(값 * sign)</code> + <code>HAVING sum(sign) &gt; 0</code> 패턴 ③ merge 전에도 결과가 정확하다.</p>
+<hr>
+<h2 id="s16">자기 채점 기준</h2>
+<div class="tablewrap"><table><thead><tr><th>점수</th><th>판정</th></tr></thead><tbody><tr><td>12개 중 9개 이상을 문서만 보고 완주</td><td>실전 응시 준비 완료</td></tr><tr><td>6~8개</td><td>13~16장(최적화·중복제거) 복습 후 재도전</td></tr><tr><td>5개 이하</td><td>5~12장부터 손으로 다시 실습</td></tr></tbody></table></div>
+<p>실전 팁: 시험도 이 모의고사처럼 <strong>앞 과제의 결과물(테이블) 위에 뒤 과제가 쌓이는</strong> 구조일 수 있다. 과제 순서대로 차분히, 각 과제 후 <code>SELECT count()</code>로 검증하는 습관을 들일 것.</p>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="18-exam-strategy.html"><span class="pn-label">← 이전</span><span class="pn-title">18장 · 시험 준비 전략</span></a><a class="pn next" href="20-cheatsheet.html"><span class="pn-label">다음 →</span><span class="pn-title">20장 · 최종 치트시트</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>

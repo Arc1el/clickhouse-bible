@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>4장 · 데이터 타입 대전 — ClickHouse Bible</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="ClickHouse Certified Developer 자격증 합격을 위한 완전 입문 한국어 학습서. 전 예제 ClickHouse 26.8 검증, 모의고사 12과제 포함.">
+<meta property="og:title" content="ClickHouse Bible">
+<meta property="og:description" content="지식 0에서 ClickHouse 자격증 합격까지 — 검증된 한 권">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<style>
+:root {
+  --bg: #FBFAF6;
+  --surface: #F3F1E7;
+  --surface2: #EDEADD;
+  --ink: #201F18;
+  --muted: #6E6A58;
+  --line: #E2DFCF;
+  --accent: #F2C230;
+  --accent-soft: #F9E9B8;
+  --accent-ink: #8A6D00;
+  --code-bg: #201F18;
+  --code-ink: #EDEADD;
+  --code-label: #A29D87;
+  --warn-bg: #FBF3DC;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16150F;
+    --surface: #1F1E15;
+    --surface2: #262418;
+    --ink: #ECE9DB;
+    --muted: #A29D87;
+    --line: #33301F;
+    --accent: #F5C842;
+    --accent-soft: #3A331A;
+    --accent-ink: #E8C24A;
+    --code-bg: #100F0A;
+    --code-ink: #E4E1D2;
+    --code-label: #7E795F;
+    --warn-bg: #2A2617;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Apple SD Gothic Neo", Pretendard, "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+  line-height: 1.72;
+  font-size: 16px;
+}
+code, pre { font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace; }
+
+/* ---- 레이아웃 ---- */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px;
+  flex: none;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  padding: 1.5rem 1rem 3rem;
+}
+.main { flex: 1; min-width: 0; }
+.content {
+  max-width: 46em;
+  margin: 0 auto;
+  padding: 0 2rem 4rem;
+}
+.mobnav { display: none; }
+@media (max-width: 880px) {
+  .sidebar { display: none; }
+  .mobnav {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+  }
+  .mobnav summary {
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-weight: 700;
+    list-style: none;
+  }
+  .mobnav summary::before { content: "☰ "; color: var(--accent-ink); }
+  .mobnav .navwrap { max-height: 70vh; overflow-y: auto; padding: 0 1rem 1rem; }
+  .content { padding: 0 1.1rem 3rem; }
+}
+
+/* ---- 사이드바 내비 ---- */
+.brand {
+  display: block;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+.brand .bolt { color: var(--accent-ink); }
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.4rem;
+}
+.navgroup { margin-bottom: 1.1rem; }
+.navlabel {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-ink);
+  margin-bottom: 0.3rem;
+  padding-left: 0.55rem;
+}
+.navgroup a {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.22rem 0.55rem;
+  border-left: 2px solid transparent;
+  border-radius: 0 4px 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.navgroup a:hover { background: var(--surface2); }
+.navgroup a.active {
+  border-left-color: var(--accent);
+  background: var(--surface2);
+  font-weight: 700;
+}
+a:focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+/* ---- 히어로 (index) ---- */
+.hero {
+  padding: 4rem 0 2.5rem;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 2rem;
+}
+.hero .eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin: 0 0 0.8rem;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 2.9rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin: 0 0 1rem;
+  text-wrap: balance;
+}
+.hero h1 .hl { background: linear-gradient(transparent 62%, var(--accent) 62%); }
+.hero p.lede {
+  font-size: 1.02rem;
+  color: var(--muted);
+  max-width: 38em;
+  margin: 0 0 1.6rem;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.chip b { color: var(--accent-ink); }
+a.cta {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--accent);
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+}
+a.cta:hover { filter: brightness(1.05); }
+
+/* ---- 목차 카드 (index) ---- */
+.tocgroup h2 {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-ink);
+  margin: 2.2rem 0 0.8rem;
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 0.7rem;
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.card:hover { border-color: var(--accent); background: var(--surface2); }
+.card-num {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+}
+.card-title { font-weight: 750; font-size: 0.95rem; }
+.card-sub { font-size: 0.78rem; color: var(--muted); }
+
+/* ---- 챕터 본문 ---- */
+.chapter { padding-top: 2.2rem; }
+.chapter h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1rem 0 1.2rem;
+  padding-left: 0.9rem;
+  border-left: 5px solid var(--accent);
+  text-wrap: balance;
+}
+.chapter h2 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.22rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  margin: 2.6rem 0 0.8rem;
+  text-wrap: balance;
+}
+.chapter h3 {
+  scroll-margin-top: 1.5rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  margin: 2rem 0 0.6rem;
+}
+.chapter p { margin: 0.8rem 0; }
+.chapter a { color: var(--accent-ink); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.chapter ul, .chapter ol { margin: 0.7rem 0; padding-left: 1.5rem; }
+.chapter li { margin: 0.32rem 0; }
+.chapter hr { border: 0; border-top: 1px solid var(--line); margin: 2.5rem 0; }
+.chapter strong { font-weight: 750; }
+
+.chapter blockquote {
+  margin: 1.2rem 0;
+  padding: 0.75rem 1.1rem;
+  background: var(--warn-bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+}
+.chapter blockquote p { margin: 0.3rem 0; font-size: 0.94rem; }
+
+.chapter code {
+  background: var(--surface2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.08em 0.35em;
+  font-size: 0.86em;
+}
+pre.code {
+  position: relative;
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+pre.code code { background: none; border: 0; padding: 0; font-size: inherit; color: inherit; }
+pre.code::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0.45rem;
+  right: 0.8rem;
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--code-label);
+}
+
+.tablewrap { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--line); border-radius: 10px; }
+.chapter table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+}
+.chapter th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+  background: var(--surface);
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.chapter td {
+  padding: 0.5rem 0.8rem;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.chapter tbody tr:last-child td { border-bottom: 0; }
+.chapter tbody tr:hover td { background: var(--surface); }
+
+.chapter details {
+  margin: 1rem 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+}
+.chapter summary { cursor: pointer; font-weight: 700; }
+
+/* ---- 이전/다음 ---- */
+.pagenav {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+}
+.pn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-width: 48%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-decoration: none;
+  color: var(--ink);
+}
+.pn:hover { border-color: var(--accent); }
+.pn.next { text-align: right; margin-left: auto; }
+.pn-label { font-size: 0.72rem; color: var(--accent-ink); font-weight: 700; }
+.pn-title { font-size: 0.9rem; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<details class="mobnav">
+  <summary>목차</summary>
+  <div class="navwrap">
+    <a class="brand" href="index.html" style="margin:0.8rem 0 0.6rem"><span class="bolt">⚡</span> ClickHouse Bible</a>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a class="active" href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </div>
+</details>
+
+<div class="layout">
+  <nav class="sidebar" aria-label="목차">
+    <a class="brand" href="index.html"><span class="bolt">⚡</span> ClickHouse Bible</a>
+    <div class="brand-sub">Certified Developer 합격 로드맵</div>
+<div class="navgroup"><div class="navlabel">시작하기</div>
+<a href="00-exam-guide.html">0장 · ClickHouse Certified Developer 시험 완전 안내</a>
+<a href="01-database-basics.html">1장 · 데이터베이스 첫걸음</a>
+<a href="02-setup.html">2장 · 설치와 실습 환경</a>
+<a href="03-sql-first-steps.html">3장 · SQL 첫걸음</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 1 · 데이터 모델링</div>
+<a class="active" href="04-data-types.html">4장 · 데이터 타입 대전</a>
+<a href="05-mergetree.html">5장 · MergeTree</a>
+<a href="06-table-design.html">6장 · 테이블 설계</a>
+<a href="07-dictionary.html">7장 · Dictionary</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 2 · 데이터 삽입</div>
+<a href="08-inserting-data.html">8장 · 데이터 삽입</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 3 · 데이터 분석</div>
+<a href="09-select-deep-dive.html">9장 · SELECT 심화</a>
+<a href="10-functions.html">10장 · 함수 레퍼런스 ①</a>
+<a href="11-aggregation-window.html">11장 · 함수 레퍼런스 ②</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 4 · 성능 최적화</div>
+<a href="12-materialized-views.html">12장 · Materialized View</a>
+<a href="13-projections-skipping-indexes.html">13장 · Projection과 Data Skipping Index</a>
+</div>
+<div class="navgroup"><div class="navlabel">영역 5 · 중복 제거</div>
+<a href="14-dedup-mutations.html">14장 · 중복 제거와 뮤테이션</a>
+</div>
+<div class="navgroup"><div class="navlabel">심화 · 실무</div>
+<a href="15-other-engines-kafka.html">15장 · 기타 테이블 엔진과 스트리밍 연동</a>
+<a href="16-performance.html">16장 · 쿼리 성능 분석</a>
+<a href="17-replication-scaling.html">17장 · 복제와 샤딩</a>
+</div>
+<div class="navgroup"><div class="navlabel">마무리</div>
+<a href="18-exam-strategy.html">18장 · 시험 준비 전략</a>
+<a href="19-mock-exam.html">19장 · 모의고사</a>
+<a href="20-cheatsheet.html">20장 · 최종 치트시트</a>
+</div>
+  </nav>
+
+  <div class="main">
+    <div class="content">
+<article class="chapter">
+<h1>4장. 데이터 타입 대전 — 시험 영역 1의 핵심</h1>
+<blockquote>
+<p>시험 채점 기준에 "<strong>컬럼에 효율적인 데이터 타입 선택</strong>"이 명시돼 있다.</p>
+<p>핵심 원칙 하나만 기억하면 된다: <strong>표현 범위를 만족하는 가장 작은 타입을 골라라.</strong></p>
+<p>타입이 작을수록 → 디스크·메모리·캐시를 덜 쓰고 → 스캔이 빨라진다.</p>
+</blockquote>
+<h2 id="s1">4.1 정수 — Int / UInt</h2>
+<p><code>Int</code>는 부호 있음(음수 가능), <code>UInt</code>는 부호 없음(0 이상). 뒤의 숫자는 비트 수다.</p>
+<div class="tablewrap"><table><thead><tr><th>타입</th><th>크기</th><th>범위</th><th>전형적 용도</th></tr></thead><tbody><tr><td>Int8</td><td>1B</td><td>-128 ~ 127</td><td>작은 코드값, sign(-1/1)</td></tr><tr><td>UInt8</td><td>1B</td><td>0 ~ 255</td><td>나이, 소형 카운트, Bool 내부표현</td></tr><tr><td>Int16</td><td>2B</td><td>-32,768 ~ 32,767</td><td></td></tr><tr><td>UInt16</td><td>2B</td><td>0 ~ 65,535</td><td>연도, 포트 번호</td></tr><tr><td>Int32</td><td>4B</td><td>약 ±21.5억</td><td></td></tr><tr><td>UInt32</td><td>4B</td><td>0 ~ 약 42.9억</td><td><strong>user_id, 카운트 등 기본 선택지</strong></td></tr><tr><td>Int64</td><td>8B</td><td>약 ±922경</td><td>금액(원 단위 큰 값), snowflake ID</td></tr><tr><td>UInt64</td><td>8B</td><td>0 ~ 약 1,844경</td><td>이벤트 ID, 해시값</td></tr><tr><td>Int128/256, UInt128/256</td><td>16/32B</td><td>초대형</td><td>암호화폐 수량 등 특수 용도</td></tr></tbody></table></div>
+<p>선택 요령 (시험 그대로 적용):</p>
+<ol>
+<li><strong>음수가 없으면 무조건 UInt</strong> (범위가 2배로 늘어난다)</li>
+<li>최댓값을 추정해서 <strong>여유 있는 최소 크기</strong> 선택 — 사용자 수 백만 명이면 UInt32(42억)면 충분</li>
+<li>애매하면 한 단계 크게 — 오버플로가 절약보다 훨씬 비싸다</li>
+</ol>
+<h3 id="s2">⚠️ 실측된 함정: 조용한 오버플로</h3>
+<pre class="code" data-lang="sql"><code>SELECT toInt8(200);              -- 결과: -56  (에러 없이 값이 깨진다!)
+SELECT accurateCast(200, &#x27;Int8&#x27;);
+-- Code: 70. DB::Exception: Value ... cannot be safely converted (에러 발생)</code></pre>
+<p><code>toInt8()</code> 같은 변환 함수는 넘치면 <strong>조용히 잘라버린다</strong>. 안전하게 변환하려면 <code>accurateCast(값, '타입')</code> 또는 <code>accurateCastOrNull(값, '타입')</code>을 쓴다.</p>
+<h2 id="s3">4.2 소수 — Float vs Decimal</h2>
+<div class="tablewrap"><table><thead><tr><th>타입</th><th>크기</th><th>특징</th></tr></thead><tbody><tr><td>Float32 / Float64</td><td>4B / 8B</td><td>빠르지만 <strong>이진 부동소수점 오차</strong> 존재</td></tr><tr><td>Decimal32(S) ~ Decimal256(S)</td><td>4~32B</td><td>십진 고정 소수점, 오차 없음</td></tr><tr><td>Decimal(P, S)</td><td>P에 따라</td><td>P=전체 자릿수(최대 76), S=소수 자릿수</td></tr></tbody></table></div>
+<ul>
+<li><strong>돈은 Decimal</strong> (<code>Decimal(18, 2)</code> = 정수부 16자리 + 소수 2자리), 센서값·비율처럼 오차가 허용되면 Float</li>
+<li><code>SELECT toDecimal64(3.14159, 4)</code> → <code>3.1415</code>, 타입은 <code>Decimal(18, 4)</code></li>
+</ul>
+<h3 id="s4">⚠️ 실측된 함정: Decimal 집계의 타입 확장</h3>
+<p><code>sum(Decimal(18,2))</code>의 <strong>결과 타입은 <code>Decimal(38,2)</code>로 커진다</strong> (오버플로 방지). 그래서 집계 결과를 저장하는 테이블(13~14장 Materialized View)을 만들 때 <code>SimpleAggregateFunction(sum, Decimal(18,2))</code>라고 쓰면 타입 불일치 에러가 난다 — <code>Decimal(38,2)</code>로 선언해야 한다.</p>
+<h2 id="s5">4.3 불리언 — Bool</h2>
+<p>내부적으로 UInt8(0/1)이다. <code>true</code>/<code>false</code> 리터럴을 그대로 쓸 수 있고, <code>WHERE spicy</code> 처럼 조건에 바로 쓸 수 있다.</p>
+<h2 id="s6">4.4 문자열 — String / FixedString</h2>
+<ul>
+<li><strong>String</strong>: 길이 무제한 가변 길이. <strong>ClickHouse의 기본 선택지.</strong> (다른 DB의 VARCHAR(255) 같은 길이 지정이 필요 없다 — <code>VARCHAR</code>라고 써도 String으로 처리된다)</li>
+<li><strong>FixedString(N)</strong>: 정확히 N바이트. 국가코드(2), 해시(32) 등 길이가 항상 같을 때만. N보다 짧으면 널 바이트로 패딩되므로 비교 시 주의.</li>
+</ul>
+<h3 id="s7">LowCardinality(String) — 시험 단골 ★</h3>
+<p><strong>고유값 종류가 적은(대략 1만 미만) 문자열 컬럼</strong>은 <code>LowCardinality(String)</code>으로 감싸라. 내부적으로 사전(dictionary) 인코딩되어 저장·비교가 정수 수준으로 빨라진다.</p>
+<p>반대 방향의 상한도 있다 — 공식 문서 기준 <strong>고유값이 10만을 넘으면 일반 String보다 오히려 느려질 수 있다.</strong> user_id, URL 전문, 이메일, 세션 토큰 같은 고카디널리티 컬럼에는 쓰지 마라. 판정은 <code>SELECT uniq(col) FROM t</code> 한 줄이면 된다.</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE logs (
+    level   LowCardinality(String),  -- &#x27;INFO&#x27;,&#x27;WARN&#x27;,&#x27;ERROR&#x27; 세 종류뿐
+    country LowCardinality(String),  -- 국가코드 ~250종
+    message String                   -- 자유 텍스트는 그냥 String
+) ENGINE = MergeTree ORDER BY level;</code></pre>
+<p>실측: 100만 행 테이블에서 3종류 값을 가진 <code>LowCardinality(String)</code> 컬럼의 압축률은 <strong>208배</strong>였다 (978KiB → 4.7KiB). 일반 String 대비 압도적이다.</p>
+<p>Enum8/Enum16 (<code>Enum8('view' = 1, 'purchase' = 2)</code>)도 비슷한 목적이지만, <strong>새 값이 들어오면 에러가 나는 엄격한 타입</strong>이다. 값 목록이 고정 계약이면 Enum, 유연해야 하면 LowCardinality를 쓴다 — 요즘 공식 권장은 대부분의 경우 LowCardinality다.</p>
+<h2 id="s8">4.5 날짜와 시간 ★★ (시험 필수)</h2>
+<div class="tablewrap"><table><thead><tr><th>타입</th><th>크기</th><th>범위</th><th>정밀도</th></tr></thead><tbody><tr><td>Date</td><td>2B</td><td>1970-01-01 ~ 2149-06-06</td><td>일</td></tr><tr><td>Date32</td><td>4B</td><td>0000-01-01 ~ 9999-12-31</td><td>일</td></tr><tr><td>DateTime</td><td>4B</td><td>1970 ~ 2106</td><td><strong>초</strong></td></tr><tr><td>DateTime64(N)</td><td>8B</td><td>0000 ~ 9999 (밀리초 기준)</td><td>10⁻ᴺ초 (N=3 밀리초, 6 마이크로초)</td></tr></tbody></table></div>
+<p>⚠️ DateTime64의 실제 범위는 <strong>정밀도 N에 따라 줄어든다</strong> — N=9(나노초)면 1677-09-21 ~ 2262-04-11로 급격히 좁아진다 (26.8 실측: <code>toDateTime64('2263-01-01', 9)</code> → <code>DECIMAL_OVERFLOW</code> 에러).</p>
+<pre class="code" data-lang="sql"><code>SELECT
+    toDate(&#x27;2026-08-16&#x27;)                          AS d,
+    toDateTime(&#x27;2026-08-16 12:34:56&#x27;)             AS dt,
+    toDateTime64(&#x27;2026-08-16 12:34:56.789&#x27;, 3)    AS dt_ms,
+    toDateTime(&#x27;2026-08-16 12:34:56&#x27;, &#x27;Asia/Seoul&#x27;) AS dt_kst;  -- 타임존 지정</code></pre>
+<ul>
+<li>내부 저장은 항상 <strong>Unix 타임스탬프(UTC)</strong>이고, 타임존은 "보여줄 때의 해석"이다</li>
+<li>컬럼 선언에도 타임존을 박을 수 있다: <code>event_time DateTime('Asia/Seoul')</code></li>
+<li>밀리초가 필요 없으면 DateTime(4B)이 DateTime64(8B)보다 절약 — "효율적 타입 선택" 포인트</li>
+</ul>
+<h2 id="s9">4.6 기타 단일 타입</h2>
+<div class="tablewrap"><table><thead><tr><th>타입</th><th>용도</th><th>예시</th></tr></thead><tbody><tr><td>UUID</td><td>16B 고유 식별자</td><td><code>generateUUIDv4()</code></td></tr><tr><td>IPv4 / IPv6</td><td>IP 주소 전용 (String보다 작고 빠름)</td><td><code>toIPv4('1.2.3.4')</code></td></tr></tbody></table></div>
+<h2 id="s10">4.7 복합 타입 — Array / Map / Tuple / Nested</h2>
+<pre class="code" data-lang="sql"><code>SELECT
+    [1, 2, 3]                 AS arr,    -- Array(UInt8)
+    map(&#x27;a&#x27;, 1, &#x27;b&#x27;, 2)       AS m,      -- Map(String, UInt8)
+    (1, &#x27;x&#x27;)                  AS tup;    -- Tuple(UInt8, String)
+
+-- 배열 인덱스는 1부터! (0부터가 아님)
+SELECT [10, 20, 30][1];   -- 10</code></pre>
+<ul>
+<li><strong>Array(T)</strong>: 한 행에 여러 값. 태그 목록, 방문 URL 목록 등. 10장에서 배열 함수 대전.</li>
+<li><strong>Map(K, V)</strong>: 키-값 쌍. 자유로운 속성 백(attribute bag). <code>m['a']</code>로 접근.</li>
+<li><strong>Tuple(...)</strong>: 서로 다른 타입 묶음. 함수 반환값 등에서 자주 만난다.</li>
+<li><strong>Nested(...)</strong>: 구조체의 배열. 내부적으로는 "같은 길이의 Array 여러 개"다.</li>
+</ul>
+<h2 id="s11">4.8 Nullable — 쓰기 전에 두 번 생각</h2>
+<pre class="code" data-lang="sql"><code>CREATE TABLE t (score Nullable(UInt8)) ENGINE = Memory;
+INSERT INTO t VALUES (NULL), (90);</code></pre>
+<ul>
+<li>ClickHouse에서 NULL을 허용하려면 <strong>명시적으로 Nullable(T)</strong>로 감싸야 한다 (기본은 NOT NULL — 값이 없으면 타입 기본값 0/''가 들어간다)</li>
+<li><strong>비용</strong>: Nullable 컬럼은 NULL 여부를 기록하는 <strong>별도 파일이 하나 더 생기며</strong>, 연산·압축 효율이 떨어진다. 공식 문서도 "꼭 필요할 때만" 권장.</li>
+<li>대안: "0이 곧 없음"으로 약속하거나, <code>-1</code> 같은 센티널 값을 쓰는 것이 관용적이다.</li>
+<li>참고: 파일 스키마 추론(9장)은 기본적으로 컬럼을 Nullable로 추론한다. 테이블을 직접 만들 때는 Nullable을 벗겨서 선언하는 것이 좋다.</li>
+</ul>
+<h2 id="s12">4.9 JSON 타입 (25.3부터 정식)</h2>
+<p>과거의 <code>Object('json')</code>은 폐기되었고, 현재는 정식 <strong>JSON 타입</strong>을 쓴다 (오픈소스 25.3부터 production-ready).</p>
+<pre class="code" data-lang="sql"><code>CREATE TABLE js (data JSON) ENGINE = Memory;
+INSERT INTO js VALUES (&#x27;{&quot;user&quot;: {&quot;name&quot;: &quot;kim&quot;, &quot;age&quot;: 30}, &quot;tags&quot;: [&quot;a&quot;,&quot;b&quot;]}&#x27;);
+
+-- 점(.) 경로로 바로 접근
+SELECT data.user.name, data.user.age, data.tags[1] FROM js;
+-- kim | 30 | a</code></pre>
+<p>⚠️ 타입을 지정하지 않은 경로의 타입은 <code>Dynamic</code>이라 <strong>집계에 바로 못 쓴다</strong> (<code>sum(data.age)</code> → <code>Illegal type Dynamic</code> 에러 — 26.8 실측). 해법 두 가지:</p>
+<pre class="code" data-lang="sql"><code>SELECT sum(data.age.:Int64) FROM js;                 -- ① 읽을 때 타입 지정
+CREATE TABLE js (data JSON(age Int64)) ENGINE = ...; -- ② 선언 시 타입 힌트 (공식 권장)</code></pre>
+<p>스키마가 유동적인 로그에 유용하다. 다만 구조가 확실히 정해져 있다면 일반 컬럼으로 펼치는 것이 항상 더 빠르다.</p>
+<h2 id="s13">4.10 타입 변환 총정리</h2>
+<pre class="code" data-lang="sql"><code>-- to계열: 관용적, 넘치면 조용히 깨질 수 있음
+SELECT toInt32(&#x27;123&#x27;), toString(456), toDate(&#x27;2026-08-16&#x27;), toFloat64(&#x27;3.14&#x27;);
+
+-- ::: 캐스트 연산자 (짧은 표기)
+SELECT &#x27;123&#x27;::UInt32, 3.14::Decimal(10,2);
+
+-- CAST 표준 문법
+SELECT CAST(&#x27;2026-08-16&#x27; AS Date);
+
+-- 안전 변환: 실패하면 에러 대신 NULL / 기본값
+SELECT toInt32OrNull(&#x27;abc&#x27;);   -- NULL
+SELECT toInt32OrZero(&#x27;abc&#x27;);   -- 0
+SELECT accurateCast(200, &#x27;Int8&#x27;);        -- 범위 초과 시 에러 (안전)
+SELECT accurateCastOrNull(200, &#x27;Int8&#x27;);  -- 범위 초과 시 NULL</code></pre>
+<h2 id="s14">4.11 시험 대비 타입 선택 훈련</h2>
+<p>다음 요구를 보고 타입을 즉답할 수 있어야 한다:</p>
+<div class="tablewrap"><table><thead><tr><th>데이터</th><th>정답</th><th>이유</th></tr></thead><tbody><tr><td>페이지 조회 시각 (초 단위면 충분)</td><td><code>DateTime</code></td><td>4B로 충분</td></tr><tr><td>API 응답 시간 ms (0~수만)</td><td><code>UInt16</code> 또는 <code>UInt32</code></td><td>음수 없음, 작게</td></tr><tr><td>HTTP 상태 코드 (100~599)</td><td><code>UInt16</code></td><td>255 초과이므로 UInt8 불가</td></tr><tr><td>국가 코드 ('KR', 'US', ...)</td><td><code>LowCardinality(String)</code></td><td>저카디널리티</td></tr><tr><td>로그 레벨 (4종)</td><td><code>LowCardinality(String)</code></td><td>〃</td></tr><tr><td>주문 금액 (통화)</td><td><code>Decimal(18, 2)</code></td><td>오차 불가</td></tr><tr><td>센서 온도</td><td><code>Float32</code></td><td>오차 허용</td></tr><tr><td>사용자 ID (최대 수억)</td><td><code>UInt32</code></td><td>42억까지 커버</td></tr><tr><td>이벤트 고유 ID</td><td><code>UUID</code> 또는 <code>UInt64</code></td><td></td></tr><tr><td>태그 목록</td><td><code>Array(String)</code></td><td></td></tr><tr><td>삭제 여부 플래그</td><td><code>Bool</code> 또는 <code>UInt8</code></td><td></td></tr></tbody></table></div>
+</article>
+<nav class="pagenav" aria-label="장 이동"><a class="pn prev" href="03-sql-first-steps.html"><span class="pn-label">← 이전</span><span class="pn-title">3장 · SQL 첫걸음</span></a><a class="pn next" href="05-mergetree.html"><span class="pn-label">다음 →</span><span class="pn-title">5장 · MergeTree</span></a></nav>
+      <footer class="footer" style="margin-top:3rem;padding-top:1.2rem;border-top:1px solid var(--line);font-size:0.78rem;color:var(--muted)">
+        <p>모든 SQL 예제는 ClickHouse 26.8.1 <code>clickhouse local</code>에서 실행 검증 ·
+        시험 정보: clickhouse.com/learn/certification (2026-08-16 확인) ·
+        원본 마크다운은 저장소 <code>bible/</code></p>
+      </footer>
+    </div>
+  </div>
+</div>
+</body>
+</html>
