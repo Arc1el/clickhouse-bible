@@ -5,8 +5,7 @@
 
 ## 읽는 방법
 
-- **웹 (GitHub Pages)**: 저장소 Settings → Pages → "Deploy from a branch" → `main` / `/docs` 설정 후
-  `https://<계정>.github.io/<저장소>/` 에서 열람
+- **웹**: https://arc1el.github.io/clickhouse-bible/
 - **마크다운**: [`bible/`](bible/README.md) 디렉토리에서 장별로 열람 (GitHub에서 바로 읽기 좋음)
 
 ## 구성
