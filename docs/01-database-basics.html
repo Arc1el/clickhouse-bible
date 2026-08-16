@@ -482,13 +482,16 @@ figure.diagram figcaption {
 }
 @media (prefers-reduced-motion: reduce) { .sqlpanel { transition: none; } .main { transition: none; } }
 .sqlpanel.open { transform: translateX(0); }
-/* 나란히(밀기) 모드: 본문이 패널 폭만큼 밀려 함께 보인다 */
+/* 나란히(밀기) 모드: 본문이 패널 폭만큼 밀려 함께 보인다.
+   패널 폭이 화면에 비례해 줄어들어 폴드 펼침(~800px) 같은 중간 폭에서도 공존 가능 */
+body.sql-push { --sqlw: clamp(300px, 45vw, 560px); }
 .main { transition: margin-right 0.25s ease; }
 body.sql-open.sql-push .main { margin-right: var(--sqlw); }
 body.sql-open.sql-push .sqlpanel { box-shadow: none; }
-@media (max-width: 1100px) {
-  /* 화면이 좁으면 밀기 모드도 덮기처럼 동작 (본문이 못 쓸 만큼 좁아지는 것 방지) */
+@media (max-width: 640px) {
+  /* 진짜 좁은 화면(폰 세로·폴드 접힘)에서만 덮기로 폴백 */
   body.sql-open.sql-push .main { margin-right: 0; }
+  body.sql-push { --sqlw: min(560px, 100vw); }
 }
 .sqlmode { display: flex; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
 .sqlmode button {
