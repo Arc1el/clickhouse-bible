@@ -441,6 +441,228 @@ figure.diagram figcaption {
   font-size: 0.85em;
 }
 
+/* ---- SQL 실행 패널 ---- */
+.sqlfab {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 40;
+  writing-mode: vertical-rl;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #201F18;
+  background: var(--accent);
+  border: 1px solid var(--accent-ink);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  padding: 0.9rem 0.45rem;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+}
+.sqlfab:hover { filter: brightness(1.05); }
+.sqlpanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 50;
+  width: min(560px, 100vw);
+  height: 100vh;
+  height: 100dvh;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: -8px 0 30px rgba(0,0,0,0.18);
+  transform: translateX(102%);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+@media (prefers-reduced-motion: reduce) { .sqlpanel { transition: none; } }
+.sqlpanel.open { transform: translateX(0); }
+.sqlpanel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.sqlpanel-head b { font-size: 0.95rem; }
+.sqlpanel-head .ok { color: var(--ok); font-size: 0.78rem; font-weight: 700; margin-left: 0.6rem; }
+.sqlclose {
+  font-family: inherit;
+  font-size: 1rem;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+}
+.sqlclose:hover { border-color: var(--accent-ink); }
+.sqlconn { flex: none; border-bottom: 1px solid var(--line); }
+.sqlconn summary {
+  cursor: pointer;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  list-style: none;
+}
+.sqlconn summary::before { content: "⚙️ "; }
+.sqlconn-body { padding: 0.2rem 1.1rem 0.9rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.sqlpresets { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.sqlpresets button {
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+}
+.sqlpresets button:hover { border-color: var(--accent-ink); }
+.sqlconn input {
+  width: 100%;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.82rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 0.42rem 0.6rem;
+}
+.sqlconn input:focus { outline: 2px solid var(--accent-ink); outline-offset: 1px; }
+.sqlconn label { font-size: 0.72rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: 0.15rem; }
+.sqlconn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.sqlconn-actions { display: flex; gap: 0.5rem; align-items: center; }
+.sqlconn-actions button {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: 7px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+}
+.sqlconn-actions .primary { background: var(--accent); color: #201F18; border-color: var(--accent-ink); }
+.sqlconn-note { font-size: 0.7rem; color: var(--muted); line-height: 1.5; }
+.sqled {
+  flex: none;
+  width: 100%;
+  height: 32vh;
+  min-height: 140px;
+  resize: vertical;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--code-ink);
+  background: var(--code-bg);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0.9rem 1rem;
+  tab-size: 4;
+}
+.sqled:focus { outline: none; }
+.sqltools {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1.1rem;
+  border-bottom: 1px solid var(--line);
+}
+.sqlrun {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  background: var(--accent);
+  color: #201F18;
+  border: 1px solid var(--accent-ink);
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+}
+.sqlrun:hover { filter: brightness(1.05); }
+.sqlrun:disabled { opacity: 0.5; cursor: wait; }
+.sqlstat { font-size: 0.74rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sqlout { flex: 1; overflow-y: auto; padding: 0.8rem 1.1rem 2rem; }
+.sqlout .stmt {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin: 0.9rem 0 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sqlout .okchip {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ok);
+  background: var(--ok-bg);
+  border: 1px solid var(--ok);
+  border-radius: 6px;
+  padding: 0.15rem 0.6rem;
+}
+.sqlerr {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.76rem;
+  color: var(--bad);
+  background: var(--bad-bg);
+  border: 1px solid var(--bad);
+  border-radius: 8px;
+  padding: 0.6rem 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.rtwrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.rtable { border-collapse: collapse; font-size: 0.78rem; font-variant-numeric: tabular-nums; width: 100%; }
+.rtable th {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.7rem;
+  text-align: left;
+  color: var(--accent-ink);
+  background: var(--surface2);
+  padding: 0.35rem 0.6rem;
+  border-bottom: 2px solid var(--accent);
+  white-space: nowrap;
+}
+.rtable th small { display: block; font-weight: 400; color: var(--muted); font-size: 0.62rem; }
+.rtable td {
+  font-family: ui-monospace, Menlo, monospace;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rtable tbody tr:last-child td { border-bottom: 0; }
+.rmeta { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; }
+.runbtn {
+  position: absolute;
+  top: 0.42rem;
+  right: 3.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #201F18;
+  background: var(--accent);
+  border: 1px solid var(--accent-ink);
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  opacity: 0.9;
+}
+.runbtn:hover { opacity: 1; }
+
 /* ---- 이전/다음 ---- */
 .pagenav {
   display: flex;
@@ -741,6 +963,51 @@ FROM url(&#x27;http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.a
   </div>
 </div>
 
+<button class="sqlfab" type="button" aria-label="SQL 실행기 열기">⚡ SQL</button>
+<aside class="sqlpanel" aria-label="SQL 실행기">
+  <div class="sqlpanel-head">
+    <span><b>⚡ SQL 실행기</b><span class="ok" id="connstate"></span></span>
+    <button class="sqlclose" type="button" aria-label="닫기">✕</button>
+  </div>
+  <details class="sqlconn" id="sqlconn" open>
+    <summary>접속 설정</summary>
+    <div class="sqlconn-body">
+      <div class="sqlpresets">
+        <button type="button" data-preset="cloud">ClickHouse Cloud</button>
+        <button type="button" data-preset="local">로컬 서버 (localhost:8123)</button>
+        <button type="button" data-preset="play">공식 플레이그라운드 (무계정·읽기전용)</button>
+      </div>
+      <div>
+        <label for="conn-url">서버 URL</label>
+        <input id="conn-url" type="text" placeholder="https://인스턴스ID.지역.clickhouse.cloud:8443" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="sqlconn-row">
+        <div>
+          <label for="conn-user">사용자</label>
+          <input id="conn-user" type="text" placeholder="default" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="conn-pass">비밀번호</label>
+          <input id="conn-pass" type="password" placeholder="" autocomplete="off">
+        </div>
+      </div>
+      <div class="sqlconn-actions">
+        <button type="button" class="primary" id="conn-save">저장 + 연결 테스트</button>
+        <button type="button" id="conn-clear">저장 지우기</button>
+      </div>
+      <p class="sqlconn-note">접속 정보는 <b>이 브라우저의 localStorage에만</b> 저장되며 어디로도 전송되지 않습니다
+      (쿼리는 브라우저에서 입력한 서버로 직접 전송). 공용 PC에서는 사용 후 "저장 지우기"를 누르세요.
+      Cloud는 콘솔의 Connect → HTTPS 주소(포트 8443)를 넣으면 됩니다.</p>
+    </div>
+  </details>
+  <textarea class="sqled" id="sqled" spellcheck="false" placeholder="-- 본문 코드의 ▶ 실행 버튼을 누르거나 직접 입력하세요&#10;SELECT version();"></textarea>
+  <div class="sqltools">
+    <button class="sqlrun" id="sqlrun" type="button">▶ 실행</button>
+    <span class="sqlstat" id="sqlstat">⌘/Ctrl + Enter</span>
+  </div>
+  <div class="sqlout" id="sqlout"></div>
+</aside>
+
 <script>
 (function () {
   // 코드 복사 버튼
@@ -776,6 +1043,243 @@ FROM url(&#x27;http://prod.publicdata.landregistry.gov.uk.s3-website-eu-west-1.a
       if (this.dataset.correct !== '1') this.classList.add('wrong');
     });
   });
+
+  /* ================= SQL 실행기 ================= */
+  var KEY = 'chbible_conn_v1';
+  var DRAFT = 'chbible_sql_draft';
+  var panel = document.querySelector('.sqlpanel');
+  var fab = document.querySelector('.sqlfab');
+  var ed = document.getElementById('sqled');
+  var out = document.getElementById('sqlout');
+  var stat = document.getElementById('sqlstat');
+  var runBtn = document.getElementById('sqlrun');
+  var connState = document.getElementById('connstate');
+  var sessionId = 'chb-' + Math.random().toString(36).slice(2, 12);
+
+  function openPanel() { panel.classList.add('open'); fab.style.display = 'none'; }
+  function closePanel() { panel.classList.remove('open'); fab.style.display = ''; }
+  fab.addEventListener('click', openPanel);
+  panel.querySelector('.sqlclose').addEventListener('click', closePanel);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && panel.classList.contains('open')) closePanel();
+  });
+
+  // ---- 접속 정보 (localStorage) ----
+  var $url = document.getElementById('conn-url');
+  var $user = document.getElementById('conn-user');
+  var $pass = document.getElementById('conn-pass');
+  function loadConn() {
+    try {
+      var c = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (c) {
+        $url.value = c.url || ''; $user.value = c.user || ''; $pass.value = c.pass || '';
+        document.getElementById('sqlconn').removeAttribute('open');
+      }
+      return c;
+    } catch (e) { return null; }
+  }
+  function saveConn() {
+    localStorage.setItem(KEY, JSON.stringify({ url: $url.value.trim(), user: $user.value.trim(), pass: $pass.value }));
+  }
+  var PRESETS = {
+    cloud: { url: '', user: 'default', pass: '', ph: 'https://인스턴스ID.지역.clickhouse.cloud:8443' },
+    local: { url: 'http://localhost:8123', user: 'default', pass: '' },
+    play:  { url: 'https://play.clickhouse.com', user: 'explorer', pass: '' }
+  };
+  document.querySelectorAll('.sqlpresets button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var p = PRESETS[this.dataset.preset];
+      $url.value = p.url; $user.value = p.user; $pass.value = p.pass;
+      if (p.ph) { $url.placeholder = p.ph; $url.focus(); }
+    });
+  });
+  document.getElementById('conn-clear').addEventListener('click', function () {
+    localStorage.removeItem(KEY);
+    $url.value = $user.value = $pass.value = '';
+    connState.textContent = '';
+    stat.textContent = '저장된 접속 정보를 지웠습니다';
+  });
+
+  function endpoint(extra) {
+    var base = $url.value.trim().replace(/\/+$/, '');
+    if (!base) return null;
+    if (!/^https?:\/\//.test(base)) base = 'https://' + base;
+    var qs = new URLSearchParams({
+      add_http_cors_header: '1',
+      default_format: 'JSONCompact',
+      output_format_json_quote_64bit_integers: '0',
+      session_id: sessionId
+    });
+    if ($user.value.trim()) qs.set('user', $user.value.trim());
+    if ($pass.value) qs.set('password', $pass.value);
+    if (extra) Object.keys(extra).forEach(function (k) { qs.set(k, extra[k]); });
+    return base + '/?' + qs.toString();
+  }
+
+  document.getElementById('conn-save').addEventListener('click', function () {
+    saveConn();
+    var ep = endpoint();
+    if (!ep) { connState.textContent = ''; stat.textContent = '서버 URL을 입력하세요'; return; }
+    connState.textContent = ' 연결 확인 중…';
+    fetch(ep, { method: 'POST', body: 'SELECT version()' })
+      .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, t: t }; }); })
+      .then(function (r) {
+        if (r.ok) {
+          var v = ''; try { v = JSON.parse(r.t).data[0][0]; } catch (e) { v = '?'; }
+          connState.textContent = ' ✓ 연결됨 (v' + v + ')';
+          document.getElementById('sqlconn').removeAttribute('open');
+        } else {
+          connState.textContent = '';
+          renderError('연결 실패: ' + r.t);
+        }
+      })
+      .catch(function (e) {
+        connState.textContent = '';
+        renderError('연결 실패: ' + e.message + '\n\nURL·포트(Cloud는 8443)와 네트워크를 확인하세요. 로컬 서버는 clickhouse server가 떠 있어야 합니다.');
+      });
+  });
+
+  // ---- SQL 문장 분리 (따옴표·주석 인식) ----
+  function splitSql(sql) {
+    var stmts = [], cur = '', i = 0, ch, next;
+    var inS = false, inB = false, inLC = false, inBC = false;
+    while (i < sql.length) {
+      ch = sql[i]; next = sql[i + 1];
+      if (inLC) { if (ch === '\n') inLC = false; cur += ch; i++; continue; }
+      if (inBC) { if (ch === '*' && next === '/') { inBC = false; cur += '*/'; i += 2; continue; } cur += ch; i++; continue; }
+      if (inS) { if (ch === '\\') { cur += ch + (next || ''); i += 2; continue; } if (ch === "'") inS = false; cur += ch; i++; continue; }
+      if (inB) { if (ch === '`') inB = false; cur += ch; i++; continue; }
+      if (ch === '-' && next === '-') { inLC = true; cur += ch; i++; continue; }
+      if (ch === '/' && next === '*') { inBC = true; cur += '/*'; i += 2; continue; }
+      if (ch === "'") { inS = true; cur += ch; i++; continue; }
+      if (ch === '`') { inB = true; cur += ch; i++; continue; }
+      if (ch === ';') { stmts.push(cur); cur = ''; i++; continue; }
+      cur += ch; i++;
+    }
+    stmts.push(cur);
+    return stmts.map(function (s) { return s.trim(); }).filter(function (s) {
+      return s && !/^(--[^\n]*\n?\s*)+$/.test(s);
+    });
+  }
+
+  // ---- 실행 ----
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function renderError(msg) {
+    var d = document.createElement('div');
+    d.className = 'sqlerr';
+    d.textContent = msg;
+    out.appendChild(d);
+    out.scrollTop = out.scrollHeight;
+  }
+  function fmtCell(v) {
+    if (v === null) return '<td style="opacity:0.45">NULL</td>';
+    if (typeof v === 'object') return '<td>' + esc(JSON.stringify(v)) + '</td>';
+    return '<td>' + esc(v) + '</td>';
+  }
+  function renderResult(stmt, body) {
+    var label = document.createElement('div');
+    label.className = 'stmt';
+    label.textContent = '▸ ' + stmt.replace(/\s+/g, ' ').slice(0, 90);
+    out.appendChild(label);
+    var j = null;
+    if (body && body.trim().startsWith('{')) { try { j = JSON.parse(body); } catch (e) {} }
+    if (!j || !j.meta) {
+      var chip = document.createElement('span');
+      chip.className = 'okchip';
+      chip.textContent = body.trim() ? body.trim().slice(0, 200) : 'OK';
+      out.appendChild(chip);
+      return;
+    }
+    var MAX = 200;
+    var rows = j.data.slice(0, MAX);
+    var h = '<div class="rtwrap"><table class="rtable"><thead><tr>';
+    j.meta.forEach(function (m) { h += '<th>' + esc(m.name) + '<small>' + esc(m.type) + '</small></th>'; });
+    h += '</tr></thead><tbody>';
+    rows.forEach(function (r) { h += '<tr>' + r.map(fmtCell).join('') + '</tr>'; });
+    h += '</tbody></table></div>';
+    var st = j.statistics || {};
+    var metaTxt = (j.rows || rows.length) + '행';
+    if (j.data.length > MAX) metaTxt += ' (표시 ' + MAX + '행)';
+    if (st.elapsed != null) metaTxt += ' · ' + (st.elapsed * 1000).toFixed(1) + 'ms';
+    if (st.rows_read != null) metaTxt += ' · 읽음 ' + Number(st.rows_read).toLocaleString() + '행';
+    var wrap = document.createElement('div');
+    wrap.innerHTML = h + '<div class="rmeta">' + esc(metaTxt) + '</div>';
+    out.appendChild(wrap);
+  }
+  function runAll() {
+    var ep = endpoint();
+    if (!ep) {
+      document.getElementById('sqlconn').setAttribute('open', '');
+      stat.textContent = '먼저 접속 설정을 입력하세요 (플레이그라운드는 무계정)';
+      return;
+    }
+    var stmts = splitSql(ed.value);
+    if (!stmts.length) return;
+    out.innerHTML = '';
+    runBtn.disabled = true;
+    stat.textContent = '실행 중…';
+    var t0 = performance.now();
+    var chain = Promise.resolve();
+    var failed = false;
+    stmts.forEach(function (stmt) {
+      chain = chain.then(function () {
+        if (failed) return;
+        return fetch(ep, { method: 'POST', body: stmt })
+          .then(function (r) { return r.text().then(function (t) { return { ok: r.ok, t: t }; }); })
+          .then(function (r) {
+            if (r.ok) renderResult(stmt, r.t);
+            else {
+              var label = document.createElement('div');
+              label.className = 'stmt';
+              label.textContent = '▸ ' + stmt.replace(/\s+/g, ' ').slice(0, 90);
+              out.appendChild(label);
+              renderError(r.t.trim() || 'HTTP 오류');
+              failed = true;
+            }
+          });
+      });
+    });
+    chain.catch(function (e) {
+      renderError('요청 실패: ' + e.message + '\n\n브라우저 콘솔을 확인하세요. (CORS/네트워크 문제일 수 있습니다)');
+    }).then(function () {
+      runBtn.disabled = false;
+      stat.textContent = stmts.length + '개 문장 · ' + ((performance.now() - t0) / 1000).toFixed(2) + 's';
+      out.scrollTop = out.scrollHeight;
+    });
+  }
+  runBtn.addEventListener('click', runAll);
+  ed.addEventListener('keydown', function (e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); runAll(); }
+  });
+  ed.addEventListener('input', function () {
+    try { localStorage.setItem(DRAFT, ed.value); } catch (e) {}
+  });
+
+  // ---- 코드 블록 "▶ 실행" 버튼 (SQL만) ----
+  document.querySelectorAll('pre.code[data-lang="sql"]').forEach(function (pre) {
+    var btn = document.createElement('button');
+    btn.className = 'runbtn';
+    btn.type = 'button';
+    btn.textContent = '▶ 실행';
+    btn.setAttribute('aria-label', '이 SQL을 실행기로 보내기');
+    btn.addEventListener('click', function () {
+      ed.value = pre.querySelector('code').innerText;
+      try { localStorage.setItem(DRAFT, ed.value); } catch (e) {}
+      openPanel();
+      ed.focus();
+      stat.textContent = '코드를 불러왔습니다 — ▶ 실행 또는 ⌘/Ctrl+Enter';
+    });
+    pre.appendChild(btn);
+  });
+
+  // 초기화
+  loadConn();
+  try {
+    var draft = localStorage.getItem(DRAFT);
+    if (draft) ed.value = draft;
+  } catch (e) {}
 })();
 </script>
 </body>
