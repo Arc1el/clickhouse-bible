@@ -1002,8 +1002,10 @@ figure.diagram figcaption {
         <button type="button" id="conn-clear">저장 지우기</button>
       </div>
       <p class="sqlconn-note">접속 정보는 <b>이 브라우저의 localStorage에만</b> 저장되며 어디로도 전송되지 않습니다
-      (쿼리는 브라우저에서 입력한 서버로 직접 전송). 공용 PC에서는 사용 후 "저장 지우기"를 누르세요.
-      Cloud는 콘솔의 Connect → HTTPS 주소(포트 8443)를 넣으면 됩니다.</p>
+      (쿼리는 브라우저에서 입력한 서버로 직접 전송 — GitHub 서버를 거치지 않음). 공용 PC에서는 사용 후 "저장 지우기"를 누르세요.
+      Cloud는 콘솔의 Connect → HTTPS 주소(포트 8443)를 넣으면 됩니다.
+      <b>로컬 서버</b> 연결 시 Chrome이 "로컬 네트워크 접근" 권한을 물으면 <b>허용</b>을 누르세요(최초 1회).
+      Safari는 로컬(localhost) 연결을 차단하므로 Cloud나 플레이그라운드를 사용하세요.</p>
     </div>
   </details>
   <textarea class="sqled" id="sqled" spellcheck="false" placeholder="-- 본문 코드의 ▶ 실행 버튼을 누르거나 직접 입력하세요&#10;SELECT version();"></textarea>
