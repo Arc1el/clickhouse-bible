@@ -1148,17 +1148,29 @@ SYSTEM RELOAD DICTIONARY countries_dict;</code></pre>
       applyMode();
     });
   });
+  // 뒤로가기(폰 제스처·브라우저 버튼)로 패널이 닫히도록 히스토리 상태를 활용
+  var pushedState = false;
   function openPanel() {
     applyMode();
     panel.classList.add('open');
     document.body.classList.add('sql-open');
     fab.style.display = 'none';
+    if (!pushedState) {
+      try { history.pushState({ chbSql: 1 }, ''); pushedState = true; } catch (e) {}
+    }
   }
-  function closePanel() {
+  function doClose() {
     panel.classList.remove('open');
     document.body.classList.remove('sql-open');
     fab.style.display = '';
   }
+  function closePanel() {
+    if (pushedState) { history.back(); }  // popstate 핸들러가 doClose 수행 (히스토리 정리)
+    else { doClose(); }
+  }
+  window.addEventListener('popstate', function () {
+    if (pushedState) { pushedState = false; doClose(); }
+  });
   fab.addEventListener('click', openPanel);
   panel.querySelector('.sqlclose').addEventListener('click', closePanel);
   applyMode();
